@@ -80,17 +80,17 @@ ktaucenters_aux=function(X,K,centers,tolmin,NiterMax){
     # cluster is an array of nx1, that contains integers from 1 to K
     # cluster[l] = j means  that observation x_l is assigned to cluster j.
     cluster <- apply(distances, 1, function(x) which(x==min(x))[1])
-    ms <- Mscale(u=distances_min, b=b1, c=c1)
+    ms <- Mscale_pablo(u=distances_min, b=b1, c=c1)
     dnor <- distances_min/ms; # normalized distance
-    tau <- ms*sqrt(mean(rhoOpt(dnor,cc=c2)))/sqrt(b2)
+    tau <- ms*sqrt(mean(rhoOpt_pablo(dnor,cc=c2)))/sqrt(b2)
     # vector that save tau scale values of the distances
     tauPath <- c(tauPath,tau)
 
     ###############################################################################
     # define weights and constants in each iteration
-    Du <-  mean(psiOpt(dnor, cc=c1)*dnor);
-    Cu <-  mean(2*rhoOpt(dnor, cc=c2)-psiOpt(dnor, cc=c2)*dnor)
-    Wni <-  (Cu*psiOpt(dnor, cc=c1) + Du*psiOpt(dnor, cc=c2))/dnor
+    Du <-  mean(psiOpt_pablo(dnor, cc=c1)*dnor);
+    Cu <-  mean(2*rhoOpt_pablo(dnor, cc=c2)-psiOpt_pablo(dnor, cc=c2)*dnor)
+    Wni <-  (Cu*psiOpt_pablo(dnor, cc=c1) + Du*psiOpt_pablo(dnor, cc=c2))/dnor
     ###############################################################################
 
 
@@ -99,7 +99,7 @@ ktaucenters_aux=function(X,K,centers,tolmin,NiterMax){
     # Given that psi_1(0)=0, Wni can be obtained throug the derivative
     # of psi_1 in this case. that is that the following lines do.
     if(sum(distances_min==0)>0){
-      Wni[distances_min==0] <- (Du * derpsiOpt(0,cc=c2) + Cu * derpsiOpt(0,cc=c1))
+      Wni[distances_min==0] <- (Du * derpsiOpt_pablo(0,cc=c2) + Cu * derpsiOpt_pablo(0,cc=c1))
     }
 
     weights <- 0*Wni;

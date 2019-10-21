@@ -28,17 +28,19 @@ Mscale <- function(u, b=0.5, c){
   #' @references Maronna, R. A., Martin, R. D., Yohai, V. J., & Salibian-Barrera, M. (2018).
   #' Robust statistics: theory and methods (with R). Wiley.
   #' @export
-  sn <- median(abs(u)) / .6745
-  if (sn==0){return(sn)}
-
-  quantity <- mean(rhoOpt(u/sn,cc=c)) - b # indicates if the root is on the right
+    sn <- median(abs(u)) / .6745
+   
+   
+    if (sn==0){return(sn)}
+    
+    quantity <- mean(rhoOpt(u/sn,cc=c)) - b # indicates if the root is on the right
 
   while (quantity>0){
     sn <- 1.5 * sn
     quantity=mean(rhoOpt(u/sn,cc=c)) - b #
   }
 
-  if (quantity==0){return(sn)}
+    if (quantity==0){return(sn)}
 
   i <- 0
   err <- 1
