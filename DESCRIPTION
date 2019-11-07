@@ -26,5 +26,7 @@ Suggests:
     tclust,
     knitr
 VignetteBuilder: knitr
+LinkingTo: Rcpp
+Imports: Rcpp
 references: Gonzalez J.D, Yohai V., and Zamar R. (2019) <arxiv:https://arxiv.org/abs/1906.08198>  
 

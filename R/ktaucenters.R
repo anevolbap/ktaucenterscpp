@@ -47,7 +47,7 @@
 #'
 #' oldpar=par(mfrow = c(1,2))
 #' 
-#' plot(X,type = "n", main = "ktaucenters (Robust) \n outliers: solid black dots")
+#' plot(X,type = 'n', main = 'ktaucenters (Robust) \n outliers: solid black dots')
 #' points(X[sal$cluster==1,],col=2);
 #' points(X[sal$cluster==2,],col=3);
 #' points(X[sal$cluster==3,],col=4)
@@ -57,7 +57,7 @@
 #' sal <- kmeans(X, centers=3,nstart=100)
 #'
 #' ### plotting the clusters ###
-#' plot(X, type ="n", main = "kmeans (Classical)")
+#' plot(X, type ='n', main = 'kmeans (Classical)')
 #' points(X[sal$cluster==1,],col=2);
 #' points(X[sal$cluster==2,],col=3);
 #' points(X[sal$cluster==3,],col=4)
@@ -71,77 +71,74 @@
 #'
 #' @importFrom stats kmeans dist qchisq
 #' @export
-ktaucenters <- function(X, K, centers = NULL, tolmin=1e-06, NiterMax=100,
-                     nstart=1,startWithKmeans=TRUE,
-                     startWithROBINPD=TRUE,cutoff=0.999){
-    if (!is.matrix(X)){
-        X=as.matrix(X);
+ktaucenters <- function(X, K, centers = NULL, tolmin = 1e-06, NiterMax = 100, nstart = 1, startWithKmeans = TRUE, startWithROBINPD = TRUE, 
+    cutoff = 0.999) {
+    if (!is.matrix(X)) {
+        X = as.matrix(X)
     }
     init_centers <- centers
     taumin <- 1e+20
-    n <- nrow(X);
-    p <- ncol(X);
-    centers0 <- matrix(0, nrow=K, ncol=p)
-    start=1*(!startWithKmeans); # the start value is one or zero.
-
-    nstartEnd=nstart+ 1*(startWithROBINPD);
-
-    for (trial in start:nstartEnd){
-                                        # if startWithKmeans its true, start=0, then trial take the zero value.
-        if (trial==0){
-            sal0 <- kmeans(X, centers=K, nstart = 20)
+    n <- nrow(X)
+    p <- ncol(X)
+    centers0 <- matrix(0, nrow = K, ncol = p)
+    start = 1 * (!startWithKmeans)  # the start value is one or zero.
+    
+    nstartEnd = nstart + 1 * (startWithROBINPD)
+    
+    for (trial in start:nstartEnd) {
+        # if startWithKmeans its true, start=0, then trial take the zero value.
+        if (trial == 0) {
+            sal0 <- kmeans(X, centers = K, nstart = 20)
             sal0$labels <- sal0$cluster
-            for (jota in 1: K){
-                                        # when there is a single observation, it is not possible to use apply function
-                if (sum(sal0$labels==jota)==1){
-                    centers0[jota, ] <- X[sal0$labels==jota, ]
+            for (jota in 1:K) {
+                # when there is a single observation, it is not possible to use apply function
+                if (sum(sal0$labels == jota) == 1) {
+                  centers0[jota, ] <- X[sal0$labels == jota, ]
                 }
-
-                if (sum(sal0$labels==jota)>1){
-                                        # as.matrix below is necessary because if p=1 function "apply" will not work.
-                    centers0[jota, ] <- apply(as.matrix(X[sal0$labels==jota, ]), 2, mean)
+                
+                if (sum(sal0$labels == jota) > 1) {
+                  # as.matrix below is necessary because if p=1 function 'apply' will not work.
+                  centers0[jota, ] <- apply(as.matrix(X[sal0$labels == jota, ]), 2, mean)
                 }
             }
         }
-
-        if (trial>=1){
-            centers0=X[sample(1:dim(X)[1],K), ]
+        
+        if (trial >= 1) {
+            centers0 = X[sample(1:dim(X)[1], K), ]
         }
-
-        if ((trial==1) & (!is.null(init_centers))){
-            centers0=init_centers;
+        
+        if ((trial == 1) & (!is.null(init_centers))) {
+            centers0 = init_centers
         }
-        if (trial==nstart+ 1){
-            retROB <- ROBINDEN(D = dist(X), data = X, k = K);
+        if (trial == nstart + 1) {
+            retROB <- ROBINDEN(D = dist(X), data = X, k = K)
             centers0 <- X[retROB$centers, ]
         }
-
-        centers=centers0;
-        ret_ktau=ktaucenters_aux(X = X,K = K,
-                                 centers = centers,tolmin = tolmin,
-                                 NiterMax = NiterMax)
-        tauPath=ret_ktau$tauPath;
-        niter=ret_ktau$niter
-
-        if (tauPath[niter]<taumin) {
-                                        # si la escala es menor que las otras actualizo
-            taumin=tauPath[niter];
-            best_tauPath=tauPath
-            best_ret_ktau=ret_ktau
+        
+        centers = centers0
+        ret_ktau = ktaucenters_aux(X = X, K = K, centers = centers, tolmin = tolmin, NiterMax = NiterMax)
+        tauPath = ret_ktau$tauPath
+        niter = ret_ktau$niter
+        
+        if (tauPath[niter] < taumin) {
+            # si la escala es menor que las otras actualizo
+            taumin = tauPath[niter]
+            best_tauPath = tauPath
+            best_ret_ktau = ret_ktau
         }
     }
-
-    newClusters<-best_ret_ktau$cluster;
-    squaredi <-(best_ret_ktau$di)^2;
-    robustScale=Mscale_pablo(u=sqrt(squaredi),b=0.5,c = normal_consistency_constants(p));
-    outliers=c()
+    
+    newClusters <- best_ret_ktau$cluster
+    squaredi <- (best_ret_ktau$di)^2
+    robustScale = Mscale_pablo(u = sqrt(squaredi), b = 0.5, c = normal_consistency_constants(p))
+    outliers = c()
     value <- qchisq(cutoff, df = p)
-    for (j in 1:K){
+    for (j in 1:K) {
         indices <- which(newClusters == j)
-        booleansubindices <-(squaredi[indices]/(robustScale^2)) > value
+        booleansubindices <- (squaredi[indices]/(robustScale^2)) > value
         outliersk <- indices[booleansubindices]
         outliers <- c(outliersk, outliers)
     }
-    best_ret_ktau$outliers=outliers
+    best_ret_ktau$outliers = outliers
     best_ret_ktau
 }

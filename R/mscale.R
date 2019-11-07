@@ -55,6 +55,7 @@ Mscale <- function(u, b=0.5, c){
     sn <- abs(snplus1)
     i  <- i+1
   }
+    print(i)
   sn
 }
 
