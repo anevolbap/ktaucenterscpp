@@ -9,7 +9,6 @@
 #' @param mp The number of the nearest neighbors to find dense regions
 #'     by LOF, the default is 10.
 #'
-#'
 #' @return
 #' \item{centers}{A numeric vector of \code{k} initial cluster
 #'     centers corresponding to the k indices of observations.}
@@ -83,17 +82,18 @@ ROBINDEN <- function(D, data, k, mp = 10) {
   id.means <- numeric(k)
   m <-1
   D <- as.matrix(D)
-  while(m<=k){
+  while(m <= k){
     # find the observations that are far away from each other - the potential cluster seeds
     if(m<=2){
       sort.points <- sort.int(D[r,],decreasing = TRUE) %>%names()%>%as.numeric()
     }else{
-      sort.points <- sort.int(apply(D[id.means[1:m],],2,min),decreasing=TRUE) %>%names() %>% as.numeric()
+        sort.points <- sort.int(apply(D[id.means[1:m],],2,min),
+                                decreasing=TRUE) %>% names() %>% as.numeric()
     }
     idp.sort.points <- idp[sort.points]
     id <- which(c(idp.sort.points <= critRobin))[1]
 
-    if (all((idp.sort.points>critRobin))){
+    if (all((idp.sort.points > critRobin))){
     # Juan D. Gonzalez
     #some times id is empty because all idp.sort.points are greater than
     # the critRobin Value, then I take the nearest point to critRobin

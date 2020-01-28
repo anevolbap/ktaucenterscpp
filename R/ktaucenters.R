@@ -29,9 +29,12 @@
 ##'  \item{\code{centers}}{:   matrix of size K x p, with the estimated K centers.}
 ##'  \item{\code{cluster}}{: array of size n x 1  integers labels between 1 and K.}
 ##'  \item{\code{tauPath}}{: sequence of tau scale values at each iterations.}
-##'  \item{\code{Wni}}{: numeric array of size n x 1 indicating the weights associated to each observation.}
-##'  \item{\code{emptyClusterFlag}}{: a boolean value. True means that in some iteration there were clusters totally empty}
-##'  \item{\code{niter}}{: number of iterations untill convergence is achived or maximun number of iteration is reached}
+##'  \item{\code{Wni}}{: numeric array of size n x 1 indicating the weights
+##' associated to each observation.}
+##'  \item{\code{emptyClusterFlag}}{: a boolean value. True means that in some
+##' iteration there were clusters totally empty}
+##'  \item{\code{niter}}{: number of iterations untill convergence is achived
+##' or maximun number of iteration is reached}
 ##'  \item{\code{di}}{: distance of each observation to its assigned cluster-center}
 ##'  \item{\code{outliers}}{: indices observation that can be considered as outliers}
 ##' }
@@ -43,7 +46,7 @@
 #' X <-  matrix(Z + mues, ncol=2)
 #'
 #' # Generate 60 sintetic outliers (contamination level 20%)
-#' X[sample(1:300,60), ] <- matrix(runif( 40, 3 * min(X), 3 * max(X) ),
+#' X[sample(1:300,60), ] <- matrix(runif(40, 3 * min(X), 3 * max(X)),
 #'                                 ncol = 2, nrow = 60)
 #'
 #' ### Applying the algortihm ####
@@ -51,24 +54,24 @@
 #'      X, K=3, centers=X[sample(1:300,3), ],
 #'      tolmin=1e-3, NiterMax=100)
 #'
-#' #### plotting  the clusters####
+#' ### plotting the clusters ###
 #'
-#' oldpar=par(mfrow = c(1,2))
+#' oldpar = par(mfrow = c(1, 2))
 #'
-#' plot(X,type = 'n', main = 'ktaucenters (Robust) \n outliers: solid black dots')
-#' points(X[sal$cluster==1,],col=2);
-#' points(X[sal$cluster==2,],col=3);
-#' points(X[sal$cluster==3,],col=4)
-#' points(X[sal$outliers,1], X[sal$outliers,2], pch=19)
+#' plot(X, type = 'n', main = 'ktaucenters (Robust) \n outliers: solid black dots')
+#' points(X[sal$cluster == 1, ], col = 2);
+#' points(X[sal$cluster == 2, ], col = 3);
+#' points(X[sal$cluster == 3, ], col = 4)
+#' points(X[sal$outliers, 1], X[sal$outliers, 2], pch = 19)
 #'
 #' ### Applying a classical (non Robust) algortihm ###
-#' sal <- kmeans(X, centers=3,nstart=100)
+#' sal <- kmeans(X, centers = 3, nstart = 100)
 #'
 #' ### plotting the clusters ###
-#' plot(X, type ='n', main = 'kmeans (Classical)')
-#' points(X[sal$cluster==1,],col=2);
-#' points(X[sal$cluster==2,],col=3);
-#' points(X[sal$cluster==3,],col=4)
+#' plot(X, type = 'n', main = 'kmeans (Classical)')
+#' points(X[sal$cluster == 1, ], col = 2);
+#' points(X[sal$cluster == 2, ], col = 3);
+#' points(X[sal$cluster == 3, ], col = 4)
 #'
 #' par(oldpar)
 #' @references Gonzalez, J. D., Yohai, V. J., & Zamar, R. H. (2019).
@@ -76,16 +79,13 @@
 #'
 #' @importFrom stats kmeans dist qchisq
 #' @export
-ktaucenters <- function(X,
-                        K,
-                        centers = NULL,
-                        tolmin = 1e-06,
-                        NiterMax = 100,
-                        nstart = 1,
+ktaucenters <- function(X, K, centers = NULL, tolmin = 1e-06,
+                        NiterMax = 100, nstart = 1,
                         startWithKmeans = TRUE,
-                        startWithROBINPD = TRUE,
-                        cutoff = 0.999) {
+                        startWithROBINPD = TRUE, cutoff = 0.999) {
+
     if (!is.matrix(X)) X = as.matrix(X)
+
     init_centers <- centers
     taumin <- 1e+20
     n <- nrow(X)
@@ -166,6 +166,6 @@ ktaucenters <- function(X,
                               },
                               USE.NAMES = FALSE),
                        use.names = FALSE)
-    best_ret_ktau$outliers = sort(outliers) ## sort for dev comparison
+    best_ret_ktau$outliers = sort(outliers) # sort for testing
     best_ret_ktau
 }
