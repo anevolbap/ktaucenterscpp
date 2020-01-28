@@ -26,10 +26,10 @@
 #'
 #' ## plot locations where the ten brightest cells are.
 #' plot(B, pch=19 )
-#' points(B[ten_brightest_cells, ], pch=19,col="yellow" )
+#' points(B[ten_brightest_cells, ], pch=19,col='yellow' )
 #'
 #' ## plot locations where the screw are.
-#' points(B[screw_index, ], pch=19,col="blue" )
+#' points(B[screw_index, ], pch=19,col='blue' )
 
 #'
 #' @source \url{https://www.nasa.gov/mission_pages/msl/multimedia/pia16225.html}

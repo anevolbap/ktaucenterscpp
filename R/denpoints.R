@@ -31,28 +31,25 @@
 #' @author Juan Domingo Gonzalez <juanrst@hotmail.com>
 #'
 #' @references Hasan AM, et al. Robust partitional clustering by
-#' outlier and density insensitive seeding. Pattern Recognition Letters, 30(11), 994-1002, 2009.
+#'     outlier and density insensitive seeding. Pattern Recognition
+#'     Letters, 30(11), 994-1002, 2009.
 #' @importFrom dbscan kNN
 #' @importFrom methods is
 
-denpoints=function (x, k = 4)
-{
-  if (is(x, "dist"))
-    n <- attr(x, "Size")
-  else n <- nrow(x)
-  if (is.null(n))
-    stop("x needs to be a matrix or a dist object!")
-  if (k < 1 || k >= n)
-    stop("k has to be larger than 1 and smaller than the number of points")
-  d <- kNN(x, k)
-  lrd <- numeric(n)
-
-  for (i in 1:n) lrd[i] <- 1/(sum(apply(cbind(d$dist[d$id[i,
-                                                          ], k], d$dist[i, ]), 1, max))/k)
-  pointDen <- lrd
-  pointDen[is.nan(pointDen)] <- 1
-  dpoints=pointDen
-  dpoints
+denpoints = function(x, k = 4) {
+    if (is(x, "dist")) 
+        n <- attr(x, "Size") else n <- nrow(x)
+    if (is.null(n)) 
+        stop("x needs to be a matrix or a dist object!")
+    if (k < 1 || k >= n) 
+        stop("k has to be larger than 1 and smaller than the number of points")
+    d <- kNN(x, k)
+    lrd <- numeric(n)
+    
+    for (i in 1:n) lrd[i] <- 1/(sum(apply(cbind(d$dist[d$id[i, ], k], d$dist[i, ]), 
+        1, max))/k)
+    pointDen <- lrd
+    pointDen[is.nan(pointDen)] <- 1
+    dpoints = pointDen
+    dpoints
 }
-
-
