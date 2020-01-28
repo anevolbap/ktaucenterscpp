@@ -94,7 +94,7 @@ ktaucenters <- function(X,
 
     nstartEnd = nstart + 1 * (startWithROBINPD)
 
-    for (trial in startwithKmeans:nstartEnd) {
+    for (trial in startWithKmeans:nstartEnd) {
         ## if startWithKmeans it's true, start = 0, then trial take
         ## the zero value.
         if (trial == 0) {
