@@ -51,15 +51,15 @@
 #'     arXiv:1906.08198.
 #' @export
 ktaucenters_aux <- function(X, K, centers, tolmin, NiterMax) {
-    
-    if (!is.matrix(centers)) 
+
+    if (!is.matrix(centers))
         centers = as.matrix(centers)
-    if (!is.matrix(X)) 
+    if (!is.matrix(X))
         X = as.matrix(X)
-    
+
     emptyCluster <- FALSE
     emptyClusterFlag <- FALSE
-    
+
     n <- nrow(X)
     p <- ncol(X)
     c1 <- constC1(p)
@@ -73,7 +73,7 @@ ktaucenters_aux <- function(X, K, centers, tolmin, NiterMax) {
     distances <- matrix(0, ncol = K, nrow = n)
     while ((niter < NiterMax) & (tol > tolmin)) {
         for (h in 1:K) {
-            
+
             # for (iw in 1:n){ repeatedCentersMatrix[iw, ] <- centers[h,] } a cada fila de x
             # le resto el centerside y despues calculo la distancia resultado: una matriz
             # donde en cada fila tiene di1 di2 diK, donde dij es la distancia entre xi y el
@@ -91,27 +91,27 @@ ktaucenters_aux <- function(X, K, centers, tolmin, NiterMax) {
         tau <- ms * sqrt(mean(rhoOpt(dnor, cc = c2)))/sqrt(b2)
         # vector that save tau scalevalues of the distances
         tauPath <- c(tauPath, tau)
-        
+
         ## define weights and constants in each iteration
         Du <- mean(psiOpt(dnor, cc = c1) * dnor)
         Cu <- mean(2 * rhoOpt(dnor, cc = c2) - psiOpt(dnor, cc = c2) * dnor)
         Wni <- (Cu * psiOpt(dnor, cc = c1) + Du * psiOpt(dnor, cc = c2))/dnor
-        ## 
-        
+        ##
+
         # Atention: when di=0. psi_1(dnor)=0 y psi_2(dnor)=0.  Then the weight w is
         # undefined due to dividing by zero.  Given that psi_1(0)=0, Wni can be obtained
         # throug the derivative of psi_1 in this case. that is that the following lines
         # do.
         if (sum(distances_min == 0) > 0) {
-            Wni[distances_min == 0] <- (Du * derpsiOpt(0, cc = c2) + Cu * derpsiOpt(0, 
-                cc = c1))
+            Wni[distances_min == 0] <- (Du * derpsiOpt(0, cc = c2) +
+                                        Cu * derpsiOpt(0, cc = c1))
         }
-        
+
         weights <- 0 * Wni
-        
+
         for (jota in 1:K) {
             if ((sum(Wni[cluster == jota])) != 0) {
-                weights[cluster == jota] = Wni[cluster == jota]/sum(Wni[cluster == 
+                weights[cluster == jota] = Wni[cluster == jota]/sum(Wni[cluster ==
                   jota])
             }
             ## check this piece of code
@@ -119,54 +119,63 @@ ktaucenters_aux <- function(X, K, centers, tolmin, NiterMax) {
                 # esto significa que el algoritmo converjio.  entonces no actualizo las X's.
                 # pero si llega a pasar que son cero las actualizo:
                 mmm = length(cluster == jota)
-                if (sum(weights[cluster == jota] == 0) == mmm) 
+                if (sum(weights[cluster == jota] == 0) == mmm)
                   weights[cluster == jota] = 1/mmm
             }
         }
-        
-        
+
+
         XW <- 0 * X
-        
-        # each X row is multiplied by their corresponding weight OLD OLD OLD OLD OLD
-        # OLDOLD OLD OLDOLD OLD OLD for (fila in 1:n){ XW[fila, ] <- X[fila, ] *
-        # weights[fila] }
-        
+
+        # each X row is multiplied by their corresponding weight OLD
+        # OLD OLD OLD OLD OLDOLD OLD OLDOLD OLD OLD for (fila in 1:n){
+        # XW[fila, ] <- X[fila, ] * weights[fila] }
+
         # New New New New New New New New New New New New New New New New
         XW = sweep(X, 1, weights, FUN = "*")
-        
+
         # New centers are named centers.
         oldcenters <- centers
-        ## sometimes a cluster has no observations, the followin code deals that situation
-        ## ...
+        ## sometimes a cluster has no observations, the followin code
+        ## deals that situation ...
         auxx = rep(0, K)
-        
+
         for (jota in 1:K) {
             auxx[jota] <- sum(cluster == jota)
             if (auxx[jota] > 0) {
-                # The 'as.matrix' in the line below is nedeed when the matrix has a single
-                # observation.  In that case R transforms it into a vector and the assignment is
+                # The 'as.matrix' in the line below is nedeed when the
+                # matrix has a single observation.  In that case R
+                # transforms it into a vector and the assignment is
                 # not possible
                 centers[jota, ] = apply(as.matrix(XW[cluster == jota, ]), 2, sum)
             }
         }
-        
+
         if (sum(auxx > 0) != K) {
-            # if not all clusters are filled, ther are replaced for the furthest centers this
-            # is speccially important when the number of clusters K is high.
-            furtherIndices = order(distances_min, decreasing = TRUE)[1:sum(auxx == 
-                0)]
+            # if not all clusters are filled, ther are replaced for
+            # the furthest centers this is speccially important when
+            # the number of clusters K is high.
+            furtherIndices = order(distances_min,
+                                   decreasing = TRUE)[1:sum(auxx == 0)]
             centers[auxx == 0, ] = X[furtherIndices, ]
             cluster[furtherIndices] = which(auxx == 0)
             emptyClusterFlag = TRUE
         }
-        
+
         ## condition sum(auxx>0)==K means that all clusters are filled.
         tol = sqrt(sum((oldcenters - centers)^2))
-        
+
         niter = niter + 1
     }
-    ret = list(tauPath = tauPath, niter = niter, centers = centers, cluster = cluster, 
-        emptyCluster = emptyCluster, tol = tol, weights = weights, di = distances_min, 
-        Wni = Wni, emptyClusterFlag = emptyClusterFlag)
+    ret = list(tauPath = tauPath,
+               niter = niter,
+               centers = centers,
+               cluster = cluster,
+               emptyCluster = emptyCluster,
+               tol = tol,
+               weights = weights,
+               di = distances_min,
+               Wni = Wni,
+               emptyClusterFlag = emptyClusterFlag)
     return(ret)
 }

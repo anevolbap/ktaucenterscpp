@@ -92,7 +92,7 @@ ktaucenters <- function(X,
     p <- ncol(X)
     centers0 <- matrix(0, nrow = K, ncol = p)
 
-    nstartEnd = nstart + 1 * (startWithROBINPD)
+    nstartEnd = nstart + startWithROBINPD
 
     for (trial in startWithKmeans:nstartEnd) {
         ## if startWithKmeans it's true, start = 0, then trial take
@@ -109,7 +109,8 @@ ktaucenters <- function(X,
                 if (sum(sal0$labels == jota) > 1) {
                     ## as.matrix below is necessary because if p=1
                     ## function 'apply' will not work.
-                    centers0[jota, ] <- colMeans(as.matrix(X[sal0$labels == jota, ]))
+                    ## centers0[jota, ] <- colMeans(as.matrix(X[sal0$labels == jota, ]))
+                    centers0[jota, ] <- apply((as.matrix(X[sal0$labels == jota, ]),2,mean)
                 }
             }
         }
