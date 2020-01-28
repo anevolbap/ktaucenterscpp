@@ -91,10 +91,11 @@ ktaucenters <- function(X,
     n <- nrow(X)
     p <- ncol(X)
     centers0 <- matrix(0, nrow = K, ncol = p)
-
-    nstartEnd = nstart + startWithROBINPD
-
-    for (trial in startWithKmeans:nstartEnd) {
+    start = 1 * (!startWithKmeans)
+    nstartEnd = nstart + 1 * (startWithROBINPD)
+    ## nstartEnd = nstart + startWithROBINPD
+    ## for (trial in !startWithKmeans:nstartEnd) {
+    for (trial in start:nstartEnd) {
         ## if startWithKmeans it's true, start = 0, then trial take
         ## the zero value.
         if (trial == 0) {
@@ -103,21 +104,19 @@ ktaucenters <- function(X,
             for (jota in 1:K) {
                 ## when there is a single observation, it is not
                 ## possible to use apply function
-                if (sum(sal0$labels == jota) == 1) {
-                    centers0[jota, ] <- X[sal0$labels == jota, ]
-                }
-                if (sum(sal0$labels == jota) > 1) {
-                    ## as.matrix below is necessary because if p=1
-                    ## function 'apply' will not work.
-                    ## centers0[jota, ] <- colMeans(as.matrix(X[sal0$labels == jota, ]))
-                    centers0[jota, ] <- apply((as.matrix(X[sal0$labels == jota, ]),2,mean)
-                }
+                ## if (sum(sal0$labels == jota) == 1) {
+                ##     centers0[jota, ] <- X[sal0$labels == jota, ]
+                ## }
+                ## if (sum(sal0$labels == jota) > 1) {
+                ##     ## as.matrix below is necessary because if p=1
+                ##     ## function 'apply' will not work.  FIXME
+                    centers0[jota, ] <- colMeans(as.matrix(X[sal0$labels == jota, ]))
+                ## }
             }
         }
 
-        if (trial >= 1) {
-            centers0 <- X[sample(1:dim(X)[1], K), ]
-        }
+        ## if (trial >= 1) centers0 <- X[sample(1:dim(X)[1], K), ]  ## FIXME
+        if (trial >= 1) centers0 <- X[sample(1:n, K), ]
 
         if ((trial == 1) & (!is.null(init_centers))) {
             centers0 <- init_centers
@@ -131,15 +130,15 @@ ktaucenters <- function(X,
 
         centers <- centers0
         ret_ktau <- ktaucenters_aux(X = X,
-                                   K = K,
-                                   centers = centers,
-                                   tolmin = tolmin,
-                                   NiterMax = NiterMax)
+                                    K = K,
+                                    centers = centers,
+                                    tolmin = tolmin,
+                                    NiterMax = NiterMax)
         tauPath <- ret_ktau$tauPath
         niter <- ret_ktau$niter
 
         if (tauPath[niter] < taumin) {
-                                        # si la escala es menor que las otras actualizo
+            ## si la escala es menor que las otras actualizo
             taumin <- tauPath[niter]
             best_tauPath <- tauPath
             best_ret_ktau <- ret_ktau
@@ -151,14 +150,22 @@ ktaucenters <- function(X,
     robustScale <- Mscale(u = sqrt(squaredi),
                           b = 0.5,
                           cc = normal_consistency_constants(p))
-    outliers <- c()
+
     value <- qchisq(cutoff, df = p)
-    for (j in 1:K) {
-        indices <- which(newClusters == j)
-        booleansubindices <- (squaredi[indices]/(robustScale^2)) > value
-        outliersk <- indices[booleansubindices]
-        outliers <- c(outliersk, outliers)
-    }
-    best_ret_ktau$outliers <- outliers
+    ## outliers <- c() FIXME
+    ## for (j in 1:K) {
+    ##     indices <- which(newClusters == j)
+    ##     booleansubindices <- (squaredi[indices]/(robustScale^2)) > value
+    ##     outliersk <- indices[booleansubindices]
+    ##     outliers <- c(outliersk, outliers)
+    ## }
+    outliers <- unlist(sapply(split(seq_along(newClusters),
+                                    newClusters),
+                              function(x) {
+                                  x[squaredi[x]/robustScale^2 > value]
+                              },
+                              USE.NAMES = FALSE),
+                       use.names = FALSE)
+    best_ret_ktau$outliers = sort(outliers) ## sort for dev comparison
     best_ret_ktau
 }
