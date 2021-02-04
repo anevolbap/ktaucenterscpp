@@ -123,8 +123,7 @@ ktaucenters <- function(X, K, centers = NULL, tolmin = 1e-06,
         }
         if (trial == nstart + 1) {
             retROB <- ROBINDEN(D = dist(X),
-                               data = X,
-                               k = K)
+                               data = X, k = K)
             centers0 <- X[retROB$centers, ]
         }
 
@@ -144,28 +143,13 @@ ktaucenters <- function(X, K, centers = NULL, tolmin = 1e-06,
             best_ret_ktau <- ret_ktau
         }
     }
-
-    newClusters <- best_ret_ktau$cluster
-    squaredi <- (best_ret_ktau$di)^2
-    robustScale <- Mscale(u = sqrt(squaredi),
-                          b = 0.5,
-                          cc = normal_consistency_constants(p))
-
-    value <- qchisq(cutoff, df = p)
-    ## outliers <- c() FIXME
-    ## for (j in 1:K) {
-    ##     indices <- which(newClusters == j)
-    ##     booleansubindices <- (squaredi[indices]/(robustScale^2)) > value
-    ##     outliersk <- indices[booleansubindices]
-    ##     outliers <- c(outliersk, outliers)
-    ## }
-    outliers <- unlist(sapply(split(seq_along(newClusters),
-                                    newClusters),
-                              function(x) {
-                                  x[squaredi[x]/robustScale^2 > value]
-                              },
-                              USE.NAMES = FALSE),
-                       use.names = FALSE)
-    best_ret_ktau$outliers = sort(outliers) # sort for testing
-    best_ret_ktau
+    best_ret_ktau$p = p
+    
+    ## Outlier detection
+    outliers = flag_outliers(best_ret_ktau, cutoff)
+    best_ret_ktau$outliers = outliers
+    
+    best_ret_ktau$p = NULL
+    
+    return(best_ret_ktau)
 }
