@@ -1,7 +1,7 @@
 #' ktaucenters
 #'
 #' Robust Clustering algorithm based on centers, a robust and
-#' efficient version of KMeans.
+#' efficient version of K-Means.
 #' @param X numeric matrix of size n x p.
 #' @param K the number of cluster.
 #' @param centers a matrix of size K x p containing the K initial
@@ -10,12 +10,12 @@
 #'     centres.
 #' @param tolmin a tolerance parameter used for the algorithm stopping
 #'     rule
-#' @param NiterMax a maximun number of iterations used for the
+#' @param NiterMax a maximum number of iterations used for the
 #'     algorithm stopping rule
 #' @param nstart the number of trials that the base algorithm
 #'     ktaucenters_aux is run.  If it is greater than 1 and center is
 #'     not set as NULL, a random set of (distinct) rows in \code{X}
-#'     will be chosen as the initial centres.
+#'     will be chosen as the initial centers.
 #' @param startWithKmeans TRUE if kmean centers values is included as
 #'     starting point.
 #' @param startWithROBINPD TRUE if ROBINDEN estimator is included as
@@ -33,23 +33,23 @@
 ##' associated to each observation.}
 ##'  \item{\code{emptyClusterFlag}}{: a boolean value. True means that in some
 ##' iteration there were clusters totally empty}
-##'  \item{\code{niter}}{: number of iterations untill convergence is achived
+##'  \item{\code{niter}}{: number of iterations until convergence is achieved
 ##' or maximun number of iteration is reached}
 ##'  \item{\code{di}}{: distance of each observation to its assigned cluster-center}
 ##'  \item{\code{outliers}}{: indices observation that can be considered as outliers}
 ##' }
 
 #' @examples
-#' # Generate Sintetic data (three cluster well separated)
+#' # Generate Sinthetic data (three cluster well separated)
 #' Z <- rnorm(600);
-#' mues <- rep(c(-3, 0, 3), 200)
-#' X <-  matrix(Z + mues, ncol=2)
+#' mus <- rep(c(-3, 0, 3), 200)
+#' X <-  matrix(Z + mus, ncol=2)
 #'
-#' # Generate 60 sintetic outliers (contamination level 20%)
+#' # Generate 60 sinthetic outliers (contamination level 20%)
 #' X[sample(1:300,60), ] <- matrix(runif(40, 3 * min(X), 3 * max(X)),
 #'                                 ncol = 2, nrow = 60)
 #'
-#' ### Applying the algortihm ####
+#' ### Applying the algorithm ####
 #'sal <- ktaucenters(
 #'      X, K=3, centers=X[sample(1:300,3), ],
 #'      tolmin=1e-3, NiterMax=100)
@@ -85,71 +85,46 @@ ktaucenters <- function(X, K, centers = NULL, tolmin = 1e-06,
                         startWithROBINPD = TRUE, cutoff = 0.999) {
 
     if (!is.matrix(X)) X = as.matrix(X)
-
-    init_centers <- centers
-    taumin <- 1e+20
     n <- nrow(X)
     p <- ncol(X)
-    centers0 <- matrix(0, nrow = K, ncol = p)
-    start = 1 * (!startWithKmeans)
-    nstartEnd = nstart + 1 * (startWithROBINPD)
-    ## nstartEnd = nstart + startWithROBINPD
-    ## for (trial in !startWithKmeans:nstartEnd) {
-    for (trial in start:nstartEnd) {
-        ## if startWithKmeans it's true, start = 0, then trial take
-        ## the zero value.
-        if (trial == 0) {
-            sal0 <- kmeans(X, centers = K, nstart = 20)
-            sal0$labels <- sal0$cluster
-            for (jota in 1:K) {
-                ## when there is a single observation, it is not
-                ## possible to use apply function
-                ## if (sum(sal0$labels == jota) == 1) {
-                ##     centers0[jota, ] <- X[sal0$labels == jota, ]
-                ## }
-                ## if (sum(sal0$labels == jota) > 1) {
-                ##     ## as.matrix below is necessary because if p=1
-                ##     ## function 'apply' will not work.  FIXME
-                    centers0[jota, ] <- colMeans(as.matrix(X[sal0$labels == jota, ]))
-                ## }
-            }
-        }
 
-        ## if (trial >= 1) centers0 <- X[sample(1:dim(X)[1], K), ]  ## FIXME
-        if (trial >= 1) centers0 <- X[sample(1:n, K), ]
-
-        if ((trial == 1) & (!is.null(init_centers))) {
-            centers0 <- init_centers
-        }
-        if (trial == nstart + 1) {
-            retROB <- ROBINDEN(D = dist(X),
-                               data = X, k = K)
-            centers0 <- X[retROB$centers, ]
-        }
-
-        centers <- centers0
-        ret_ktau <- ktaucenters_aux(X = X,
-                                    K = K,
-                                    centers = centers,
-                                    tolmin = tolmin,
-                                    NiterMax = NiterMax)
-        tauPath <- ret_ktau$tauPath
-        niter <- ret_ktau$niter
-
-        if (tauPath[niter] < taumin) {
-            ## si la escala es menor que las otras actualizo
-            taumin <- tauPath[niter]
-            best_tauPath <- tauPath
-            best_ret_ktau <- ret_ktau
-        }
+    ## FIXME: the order is due to testing
+    init = list()
+    if (startWithKmeans) { 
+        init = append(init, "kmeans2")
     }
-    best_ret_ktau$p = p
+    init = append(init, rep("sample", nstart))
+    if (startWithROBINPD) {
+        init = append(init, "robin")
+    }
+    if (!is.null(centers)) {
+        init = append(init, "custom")
+    }
     
-    ## Outlier detection
-    outliers = flag_outliers(best_ret_ktau, cutoff)
-    best_ret_ktau$outliers = outliers
+    # FIXME: make it parallel
+    ktau_runs = lapply(unlist(init), 
+                       function(m) {
+                           centers0 = initialize_centers(X, K, 
+                                                         method = m, 
+                                                         centers = centers)
+                           ktaucenters_aux(X = X,
+                                           K = K,
+                                           centers = centers0,
+                                           tolmin = tolmin,
+                                           NiterMax = NiterMax)
+                       })
+
+    # Pick best run
+    best = which.min(lapply(ktau_runs, function(x) x$tauPath_niter))
+    best_ktau = ktau_runs[[best]]
     
-    best_ret_ktau$p = NULL
+    # Outlier detection
+    outliers = flag_outliers(best_ktau, cutoff)
+    best_ktau$outliers = outliers
     
-    return(best_ret_ktau)
+    ## FIXME: For testing purposes
+    best_ktau$p = NULL
+    best_ktau$tauPath_niter = NULL
+    
+    return(best_ktau)
 }

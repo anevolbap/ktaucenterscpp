@@ -1,14 +1,14 @@
 #' ktaucenters_aux
 #'
 #' Robust Clustering algorithm based on centers, a robust and
-#' efficient version of KMeans.
+#' efficient version of K-Means.
 #' @param X A matrix of size n x p.
 #' @param K The number of clusters.
 #' @param centers matrix of size K x p containing the K initial
 #'     centers, one at each matrix-row.
 #' @param tolmin tolerance parameter used for the algorithm stopping
 #'     rule
-#' @param NiterMax a maximun number of iterations used for the
+#' @param NiterMax a maximum number of iterations used for the
 #'     algorithm stopping rule
 #' @return A list including the estimated K centers and labels for the
 #'     observations
@@ -24,18 +24,18 @@
 #'     indicating the weights associated to each observation.}
 #' \item{\code{emptyClusterFlag}}{: a boolean value. True means
 #'     that in some iteration there were clusters totally empty}
-#' \item{\code{niter}}{: number of iterations untill convergence
-#'     is achived or maximun number of iteration is reached}
+#' \item{\code{niter}}{: number of iterations until convergence
+#'     is achived or maximum number of iteration is reached}
 #' \item{\code{di}}{distance of each observation to its assigned
 #'     cluster-center} }
 #' @examples
 #'
-#' # Generate Sintetic data (three cluster well separated)
+#' # Generate Synthetic data (three cluster well separated)
 #' Z=rnorm(600);
 #' mues=rep(c(0,10,20),200)
 #' X= matrix(Z+mues,ncol=2)
 #'
-#' # Applying the algortihm
+#' # Applying the algorithm
 #' sal = ktaucenters_aux(
 #' X, K=3, centers=X[sample(1:300,3), ],
 #' tolmin=1e-3, NiterMax=100)
@@ -57,137 +57,135 @@
 #' @export
 ktaucenters_aux <- function(X, K, centers, tolmin, NiterMax) {
 
+    # Sanitize
     if (!is.matrix(centers)) centers = as.matrix(centers)
     if (!is.matrix(X)) X = as.matrix(X)
 
     emptyCluster <- FALSE
     emptyClusterFlag <- FALSE
 
+    # Initialize stuff
     n <- nrow(X)
     p <- ncol(X)
     c1 <- constC1(p)
-    b1 <- 0.5
+    b1 <- 0.5 # FIXME: avoid hard coded constants
     c2 <- constC2(p)
-    b2 <- 1
+    b2 <- 1 # FIXME: avoid hard coded constants
     tauPath <- c()
     niter <- 0
     tol <- tolmin + 1
-    repeatedCentersMatrix <- matrix(0L, ncol = p, nrow = n)
-    distances <- matrix(0L, ncol = K, nrow = n)
-    ## distances2 <- matrix(0, ncol = K, nrow = n)
+    # repeatedCentersMatrix <- matrix(0L, ncol = p, nrow = n)
+    # distances <- matrix(0L, ncol = K, nrow = n)
+    
     while ((niter < NiterMax) & (tol > tolmin)) {
-        for (h in 1:K) {
-            ## for (iw in 1:n){ repeatedCentersMatrix[iw, ] <-
-            ## centers[h,] } a cada fila de x le resto el centerside y
-            ## despues calculo la distancia resultado: una matriz
-            ## donde en cada fila tiene di1 di2 diK, donde dij es la
-            ## distancia entre xi y el centerside muj OLD distances[,
-            ## h] <- sqrt((X - repeatedCentersMatrix)^2 %*% rep(1,p))
-            ## distances[, h] <- sqrt(rowSums(sweep(X, 2, centers[h, ])^2)) #FIXME
-            distances[, h] <- sqrt(rowSums(((X - rep(1, n) %*% t(centers[h, ]))^2)))
-        }
-        ## Taking the minimun distance from each observation to its center.
-        ## print(mean(distances2 == distances))
+        
+        # Step 1: recompute labels
+        
+        # Compute distances from observations to each center
+        distances <- sqrt(apply(t(centers), 2, 
+                                function(m){
+                                    colSums((t(X) - m)^2)
+                                }))
+
+        ## Find the closest center for each observation
         distances_min <- apply(distances, 1, min)
-        # cluster is an array of nx1, that contains integers from 1 to
-        # K cluster[l] = j means that observation x_l is assigned to
-        # cluster j.
+        
+        # Membership vector (when ties, first is chosen)
         cluster <- max.col(-distances, ties = "first")
+        
+        # Tau-scale
         ms <- Mscale(u = distances_min, b = b1, cc = c1)
         dnor <- distances_min / ms  # normalized distance
         tau <- ms * sqrt(mean(rhoOpt(dnor, cc = c2))) / sqrt(b2)
-        # vector that save tau scalevalues of the distances
         tauPath <- c(tauPath, tau)
 
-        ## define weights and constants in each iteration
+        # Compute constants in each iteration
         Du <- mean(psiOpt(dnor, cc = c1) * dnor)
         Cu <- mean(2 * rhoOpt(dnor, cc = c2) - psiOpt(dnor, cc = c2) * dnor)
         Wni <- (Cu * psiOpt(dnor, cc = c1) + Du * psiOpt(dnor, cc = c2))/dnor
 
-        # Atention: when di=0. psi_1(dnor)=0 y psi_2(dnor)=0.  Then the weight w is
-        # undefined due to dividing by zero.  Given that psi_1(0)=0, Wni can be obtained
-        # throug the derivative of psi_1 in this case. that is that the following lines
-        # do.
+        # FIXME: di?
+        # Attention: when di=0, psi_1(dnor)=0 and psi_2(dnor)=0.
+        # Then weight w is undefined due to dividing by zero.
+        # Given that psi_1(0)=0, Wni can be obtained
+        # through the derivative of psi_1 in this case:
         if (sum(distances_min == 0) > 0) {
             Wni[distances_min == 0] <- (Du * derpsiOpt(0, cc = c2) +
                                         Cu * derpsiOpt(0, cc = c1))
         }
 
-        weights <- numeric(length(Wni))
-        ## weights <- 0 * Wni ## FIXME
+        # Compute weights
+        # weights <- numeric(length(Wni))
+        # for (jota in 1:K) {
+        #     if ((sum(Wni[cluster == jota])) != 0) {
+        #         weights[cluster == jota] = Wni[cluster == jota]/sum(Wni[cluster ==
+        #           jota])
+        #     }
+        #     # FIXME: [1] check this piece of code 
+        #     if ((sum(Wni[cluster == jota])) == 0) { 
+        #         # Esto significa que el algoritmo convergio. Entonces
+        #         # no actualizo las X's. Pero si llega a pasar que son
+        #         # cero las actualizo:
+        #         mmm = length(cluster == jota)
+        #         if (sum(weights[cluster == jota] == 0) == mmm)
+        #           weights[cluster == jota] = 1/mmm
+        #     }
+        # }
 
-        for (jota in 1:K) {
-            if ((sum(Wni[cluster == jota])) != 0) {
-                weights[cluster == jota] = Wni[cluster == jota]/sum(Wni[cluster ==
-                  jota])
-            }
-            ## check this piece of code
-            if ((sum(Wni[cluster == jota])) == 0) {
-                # Esto significa que el algoritmo convergio. Entonces
-                # no actualizo las X's. Pero si llega a pasar que son
-                # cero las actualizo:
-                mmm = length(cluster == jota)
-                if (sum(weights[cluster == jota] == 0) == mmm)
-                  weights[cluster == jota] = 1/mmm
-            }
-        }
-
-        XW <- matrix(0L, nrow = dim(X)[1], ncol = dim(X)[2])
-        ## XW = 0 * X  # FIXME
-
-        # each X row is multiplied by their corresponding weight OLD
-        # OLD OLD OLD OLD OLDOLD OLD OLDOLD OLD OLD for (fila in 1:n){
-        # XW[fila, ] <- X[fila, ] * weights[fila] }
-
-        # New New New New New New New New New New New New New New New New
-        ## XW = sweep(X, 1, weights, FUN = "*") # FIXME
+        # FIXME: check [1]
+        weights_aux = lapply(split(Wni, cluster), 
+                     function(x) {
+                         if (sum(x)) {
+                             ret = x / sum(x)}
+                         else {
+                             ret = ret #1/length(x) 
+                         }
+                     })
+        weights = unsplit(weights_aux, cluster)
+        
+        # Weight observations
         XW <- crossprod(diag(weights), X)
 
-        # New centers are named centers.
+        # Update centers
         oldcenters <- centers
-        ## sometimes a cluster has no observations, the following code
-        ## deals with that situation:
-
-        ## auxx <- numeric(K)
-        ## for (jota in 1:K) {
-        ##     auxx[jota] <- sum(cluster == jota)
-        ##     if (auxx[jota] > 0) {
-        ##         ## The 'as.matrix' in the line below is nedeed when
-        ##         ## the matrix has a single observation.  In that case
-        ##         ## R transforms it into a vector and the assignment is
-        ##         ## not possible
-        ##         centers[jota, ] = colSums(as.matrix(XW[cluster == jota, ]))
-        ##     }
-        ## }
-        ## centers2 = centers
-        auxx <- table(c(cluster, seq(K))) - 1  ## vulgar trick
-        centers[auxx > 0, ] = do.call(rbind,
-                                      by(XW, cluster,
-                                         FUN = colSums)) ## FIXME
-
-        if (sum(auxx > 0) != K) { 
-            # if not all clusters are filled, ther are replaced for
-            # the furthest centers this is specially important when
-            # the number of clusters K is high.
-            furtherIndices = order(distances_min,
-                                   decreasing = TRUE)[1:sum(auxx == 0)]
-            centers[auxx == 0, ] = X[furtherIndices, ]
-            cluster[furtherIndices] = which(auxx == 0)
+        
+        # Step 2: recompute centers 
+        
+        # Sometimes a cluster has no observations:
+        obs_per_cluster <- table(c(cluster, seq(K))) - 1
+        nonempty_cluster <- obs_per_cluster > 0
+        centers[nonempty_cluster, ] = Reduce(rbind, 
+                                             by(XW, 
+                                                cluster,
+                                                colSums)) ## FIXME
+        
+        # if not all clusters are filled, they are replaced for
+        # the furthest centers. This is specially important when
+        # the number of clusters K is high.
+        if (any(!nonempty_cluster)) {
+            furtherIndices = head(order(distances_min,
+                                        decreasing = TRUE), 
+                                  sum(!nonempty_cluster))
+            centers[obs_per_cluster == 0, ] = X[furtherIndices, ]
+            cluster[furtherIndices] = which(!nonempty_cluster)
             emptyClusterFlag = TRUE
         }
 
-        ## condition sum(auxx > 0) == K means that all clusters are filled.
+        ## Exit condition
         tol <- sqrt(sum((oldcenters - centers)^2))
-
+        
+        ## Next iteration...
         niter <- niter + 1
     }
 
     return (list(tauPath = tauPath,
                  niter = niter,
+                 tauPath_niter = tauPath[niter],
                  centers = centers,
                  cluster = cluster,
                  emptyCluster = emptyCluster,
                  tol = tol,
+                 p = p,
                  weights = weights,
                  di = distances_min,
                  Wni = Wni,
