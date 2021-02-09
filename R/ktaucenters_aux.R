@@ -6,9 +6,9 @@
 #' @param K The number of clusters.
 #' @param centers matrix of size K x p containing the K initial
 #'     centers, one at each matrix-row.
-#' @param tolmin tolerance parameter used for the algorithm stopping
+#' @param tolerance tolerance parameter used for the algorithm stopping
 #'     rule
-#' @param NiterMax a maximum number of iterations used for the
+#' @param max_iter a maximum number of iterations used for the
 #'     algorithm stopping rule
 #' @return A list including the estimated K centers and labels for the
 #'     observations
@@ -38,7 +38,7 @@
 #' # Applying the algorithm
 #' sal = ktaucenters_aux(
 #' X, K=3, centers=X[sample(1:300,3), ],
-#' tolmin=1e-3, NiterMax=100)
+#' tolerance=1e-3, max_iter=100)
 #'
 #' #plot the results
 #' plot(X,type='n')
@@ -55,7 +55,7 @@
 #'     Robust Clustering Using Tau-Scales. arXiv preprint
 #'     arXiv:1906.08198.
 #' @export
-ktaucenters_aux <- function(X, K, centers, tolmin, NiterMax) {
+ktaucenters_aux <- function(X, K, centers, tolerance, max_iter) {
 
     # Sanitize
     if (!is.matrix(centers)) centers = as.matrix(centers)
@@ -73,11 +73,11 @@ ktaucenters_aux <- function(X, K, centers, tolmin, NiterMax) {
     b2 <- 1 # FIXME: avoid hard coded constants
     tauPath <- c()
     niter <- 0
-    tol <- tolmin + 1
+    tol <- tolerance + 1
     # repeatedCentersMatrix <- matrix(0L, ncol = p, nrow = n)
     # distances <- matrix(0L, ncol = K, nrow = n)
     
-    while ((niter < NiterMax) & (tol > tolmin)) {
+    while ((niter < max_iter) & (tol > tolerance)) {
         
         # Step 1: recompute labels
         
