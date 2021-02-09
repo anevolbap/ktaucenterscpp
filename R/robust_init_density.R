@@ -64,7 +64,6 @@
 #' @seealso \code{\link[dbscan]{lof}}
 #'
 #' @importFrom dbscan lof
-#' @importFrom dplyr %>%
 #' @importFrom dbscan kNN
 #
 robust_init_density <- function(dist_matrix, data, n_clusters, 
@@ -74,22 +73,21 @@ robust_init_density <- function(dist_matrix, data, n_clusters,
   iter <- 1  
   n <- nrow(data)
   
-  # Compute the inverse density point.
-  idp <- 1 / denpoints(dist_matrix, k = mp)
+  # Compute the inverse density points.
+  idp <- density_points(dist_matrix, k = mp)
   position <- floor(max(0.5, 0.96 * (1 - 1.5 / n_clusters)) * n)
-  crit_robin <- sort(idp, decreasing = FALSE)[position]
+  crit_robin <- sort(idp)[position]
   
   if (method == "robin") r <- sample(n, 1)
   if (method == "density") r <- which.min(idp)
   
+  dist_matrix = as.matrix(dist_matrix) # FIXME: check types 
   while(iter <= n_clusters){
-    # Find the observations far away from each other 
-    # (the potential cluster seeds)
     if (iter <= 2) {
       sorted_points <- order(dist_matrix[r, ], decreasing = TRUE)
     } else {
       sorted_points <- order(apply(dist_matrix[id_means[1:iter], ], 2, min), #FIXME: try Rfast package
-                             decreasing=TRUE)
+                             decreasing = TRUE)
     }
     idp_sorted_points <- idp[sorted_points]
     
