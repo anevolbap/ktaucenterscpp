@@ -8,7 +8,7 @@ flag_outliers <- function(ktau, cutoff) {
                          b = MSCALE_BREAKDOWN_POINT,
                          cc = normal_consistency_constants(ktau$p))
   
-  outliers <- which(ktau$di^2 > thr * robust_scale^2)
-  
-  return(outliers)
+  ktau$outliers <- which(ktau$di^2 > thr * robust_scale^2)
+   
+  return(ktau)
 }

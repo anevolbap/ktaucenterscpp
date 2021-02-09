@@ -8,9 +8,9 @@
 #'     centers, one at each matrix-row. If centers is NULL a random
 #'     set of (distinct) rows in \code{X} are chosen as the initial
 #'     centres.
-#' @param tolmin a tolerance parameter used for the algorithm stopping
+#' @param tolerance a tolerance parameter used for the algorithm stopping
 #'     rule
-#' @param NiterMax a maximum number of iterations used for the
+#' @param max_iter a maximum number of iterations used for the
 #'     algorithm stopping rule
 #' @param nstart the number of trials that the base algorithm
 #'     ktaucenters_aux is run.  If it is greater than 1 and center is
@@ -52,7 +52,7 @@
 #' ### Applying the algorithm ####
 #'sal <- ktaucenters(
 #'      X, K=3, centers=X[sample(1:300,3), ],
-#'      tolmin=1e-3, NiterMax=100)
+#'      tolerance=1e-3, max_iter=100)
 #'
 #' ### plotting the clusters ###
 #'
@@ -78,20 +78,21 @@
 #' Robust Clustering Using Tau-Scales. arXiv preprint arXiv:1906.08198.
 #'
 #' @importFrom stats kmeans dist qchisq
+#' @importFrom parallel detectCores makeCluster stopCluster
+#' @importFrom doParallel registerDoParallel
+#' @importFrom foreach %dopar% foreach
 #' @export
-ktaucenters <- function(X, K, centers = NULL, tolmin = 1e-06,
-                        NiterMax = 100, nstart = 1,
+ktaucenters <- function(X, K, centers = NULL, tolerance = 1e-06,
+                        max_iter = 100, nstart = 1,
                         startWithKmeans = TRUE,
                         startWithROBINPD = TRUE, cutoff = 0.999) {
 
     if (!is.matrix(X)) X = as.matrix(X)
-    n <- nrow(X)
-    p <- ncol(X)
 
-    ## FIXME: the order is due to testing
+    # FIXME: the order is due to testing (seed issues)
     init = list()
     if (startWithKmeans) { 
-        init = append(init, "kmeans2")
+        init = append(init, "kmeans")
     }
     init = append(init, rep("sample", nstart))
     if (startWithROBINPD) {
@@ -101,30 +102,28 @@ ktaucenters <- function(X, K, centers = NULL, tolmin = 1e-06,
         init = append(init, "custom")
     }
     
-    # FIXME: make it parallel
-    ktau_runs = lapply(unlist(init), 
-                       function(m) {
-                           centers0 = initialize_centers(X, K, 
-                                                         method = m, 
-                                                         centers = centers)
-                           ktaucenters_aux(X = X,
-                                           K = K,
-                                           centers = centers0,
-                                           tolmin = tolmin,
-                                           NiterMax = NiterMax)
-                       })
+    # Parallel loop
+    no_cores <- detectCores() - 1  
+    cl <- makeCluster(no_cores, type = "FORK")  
+    registerDoParallel(cl)  
+    ktau_runs <- foreach(i = seq_along(init)) %dopar% {
+        centers0 = initialize_centers(X, K, 
+                                      method = init[[i]], 
+                                      centers = centers)
+        ktaucenters_aux(X = X,
+                        K = K,
+                        centers = centers0,
+                        tolerance = tolerance,
+                        max_iter = max_iter)
+    }
+    stopCluster(cl)  
 
     # Pick best run
     best = which.min(lapply(ktau_runs, function(x) x$tauPath_niter))
     best_ktau = ktau_runs[[best]]
     
     # Outlier detection
-    outliers = flag_outliers(best_ktau, cutoff)
-    best_ktau$outliers = outliers
-    
-    ## FIXME: For testing purposes
-    best_ktau$p = NULL
-    best_ktau$tauPath_niter = NULL
-    
+    best_ktau = flag_outliers(best_ktau, cutoff)
+
     return(best_ktau)
 }
