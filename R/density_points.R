@@ -1,6 +1,6 @@
 #' denpoints
 #'
-#' @description \code{denpoints} Estimates the densities values of a
+#' @description \code{density_points} Estimates the densities values of a
 #'     sample.
 #'
 #' @param x A distance matrix calculated on \code{data} or a matrix
@@ -38,29 +38,11 @@
 #'     Letters, 30(11), 994-1002, 2009.
 #' @importFrom dbscan kNN
 #' @importFrom methods is
-denpoints <- function(x, k = 4) {
+density_points <- function(x, k = 4) {
     
-    if (is(x, "dist")) {
-        n <- attr(x, "Size")
-    } else {
-        n <- nrow(x)
-    }
-    if (is.null(n))
-        stop("x needs to be a matrix or a dist object!")
-    if (k < 1 || k >= n)
-        stop("k has to be larger than 1 and smaller than the number of points")
-
     d <- kNN(x, k)
-
-    pointDen <- numeric(n)
-    # ORIGINAL
-    #for (i in 1:n) lrd[i] <- 1/(sum(apply(cbind(d$dist[d$id[i, 
-    #], k], d$dist[i, ]), 1, max))/k)
-    
-    for (i in 1:n) {
-        # FIXME: PV no entiendo (creo que el k del segundo indice esta mal)
-        pointDen[i] <- k / sum(pmax(d$dist[d$id[i, ], k], d$dist[i, ]))
-    }
+    pointDen <- rowMeans(pmax(matrix(d$dist[t(d$id), k], ncol=k, byrow = TRUE),
+                              d$dist))
     pointDen[is.nan(pointDen)] <- 1
     return(pointDen)
 }
