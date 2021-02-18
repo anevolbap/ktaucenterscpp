@@ -20,7 +20,7 @@ Description: A clustering algorithm similar to K-Means is implemented, it has tw
 Encoding: UTF-8
 Depends: R (>= 2.10), MASS, methods, dplyr, dbscan, stats, GSE
 LazyData: true
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.1
 Suggests:
     jpeg,
     tclust,
@@ -30,3 +30,4 @@ VignetteBuilder: knitr
 LinkingTo: Rcpp
 Imports: Rcpp
 references: Gonzalez J.D, Yohai V., and Zamar R. (2019) <arxiv:https://arxiv.org/abs/1906.08198>
+License: GPL (>= 3)

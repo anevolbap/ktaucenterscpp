@@ -5,3 +5,9 @@ doc
 *~
 .out
 .org
+.Rhistory
+.RData
+Rprof.out
+ktaucenters-dev-PabloYJuan.Rproj
+pablo-test.R
+pablo.org

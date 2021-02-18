@@ -4,7 +4,8 @@
 \name{mars_screw}
 \alias{mars_screw}
 \title{Intensity and saturation values of a picture from mars.}
-\format{A list containing information about  pixels of a picture form mars
+\format{
+A list containing information about  pixels of a picture form mars
 mainly containing red sand and  metal form Rover itself. List include
 
 \itemize{
@@ -14,7 +15,8 @@ whereas elements 65 to 128 of each row indicate the cell's Intensity  values.
 \item geographic_matrix: An integer matrix of dimension 5063 x 2, each row indicates
  each square cell's locations (x-axis y-axis) at the picture.
  \item screw_index: the index corresponding to the screw observation (screw_index=4180)
-}}
+}
+}
 \source{
 \url{https://www.nasa.gov/mission_pages/msl/multimedia/pia16225.html}
 }
@@ -37,10 +39,10 @@ ten_brightest_cells <-order(maximun_at_each_cell, decreasing=TRUE)[1:10]
 
 ## plot locations where the ten brightest cells are.
 plot(B, pch=19 )
-points(B[ten_brightest_cells, ], pch=19,col="yellow" )
+points(B[ten_brightest_cells, ], pch=19,col='yellow' )
 
 ## plot locations where the screw are.
-points(B[screw_index, ], pch=19,col="blue" )
+points(B[screw_index, ], pch=19,col='blue' )
 
 }
 \keyword{datasets}
