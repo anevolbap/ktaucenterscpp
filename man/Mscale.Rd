@@ -12,7 +12,8 @@ Mscale(u, b, cc)
 
 \item{b}{the desired break down point}
 
-\item{c}{a tuning constant, if consistency to standard normal distribution is desired use
+\item{cc}{a tuning constant, if consistency to standard normal
+  distribution is desired use
 \code{\link{normal_consistency_constants}}}
 }
 \value{

@@ -7,21 +7,37 @@
 improvedktaucenters(X, K, cutoff = 0.999, nstart = 5, INITcenters = NULL)
 }
 \arguments{
-\item{X}{numeric matrix  of size n x p.}
+\item{X}{numeric matrix of size n x p.}
 
 \item{K}{the number of cluster.}
 
-\item{cutoff}{optional argument for getOutliers - quantiles of chi-square to be used as a threshold for outliers detection, defaults to 0.999}
+\item{cutoff}{optional argument for getOutliers - quantiles of
+chi-square to be used as a threshold for outliers detection,
+defaults to 0.999}
 
-\item{nstart}{optional the number of trials that the base algorithm ktaucenters_aux is run
-at the first stage. #' If it is greater than 1 and center is not set as NULL,
-a random set of (distinct) rows in x is chosen as the initial centres for each try.}
+\item{nstart}{optional the number of trials that the base algorithm
+ktaucenters_aux is run at the first stage. #' If it is greater
+than 1 and center is not set as NULL, a random set of
+(distinct) rows in x is chosen as the initial centres for each
+try.}
 
-\item{INITcenters}{numeric matrix  of size K x p indicating the initial centers for that clusters and robust covarianze matrices will be 
-computed, if it is set as NULL the algorithm will compute @param INITcenters from ktaucenters routine. Set to NULL by default.}
+\item{INITcenters}{numeric matrix of size K x p indicating the
+initial centers for that clusters and robust covarianze
+matrices will be computed, if it is set as NULL the algorithm
+will compute @param INITcenters from ktaucenters routine. Set
+to NULL by default.}
 }
 \value{
-A list including the estimated K centers and clusters labels for the observations
+A list including the estimated K centers and clusters
+    labels for the observations
+}
+\description{
+Robust Clustering algorithm for non-spherical data. This function
+estimate clusters taking into account that clusters may have
+different size, volume or orientation.
+}
+\details{
+text describing parameter inputs in more detail.
 \itemize{
  \item{\code{centers}}{:   matrix of size K x p, with the estimated K centers.}
  \item{\code{cluster}}{: array of size n x 1  integers labels between 1 and K.}
@@ -33,19 +49,15 @@ A list including the estimated K centers and clusters labels for the observation
  \item{\code{outliers}}{: indices observation that can be considered as outliers.}
 }
 }
-\description{
-Robust Clustering algorithm for non-spherical data. This function estimate clusters taking into account that clusters may have
-different size, volume or orientation.
-}
 \examples{
 
 # Generate Sintetic data (three normal cluster in two dimension)
-# clusters have different shapes and orentation.
-# The data is contaminated uniformly (level 20\%).
+# clusters have different shapes and orentation.  The data is
+# contaminated uniformly (level 20\%).
 
-################################################
-#### Start data generating process ############
-##############################################
+#######################################
+#### Start data generating process ####
+#######################################
 
 # generates base clusters
 set.seed(1)
@@ -69,7 +81,7 @@ X[true.cluster==1, ]=X[true.cluster==1,]+ matrix(c(-5,-1),byrow = TRUE,nrow=100,
 outliers=sample(1:300,60)
 X[outliers, ] <- matrix(runif( 40, 2 * min(X), 2 * max(X) ),
                                 ncol = 2, nrow = 60)
-###############################################
+#############################################
 #### END data generating process ############
 #############################################
 
@@ -82,12 +94,12 @@ ret=improvedktaucenters(X,K=3,cutoff=0.999)
 ### plotting results ########################
 #############################################
 oldpar=par(mfrow=c(2,1))
-#' plot(X,main="actual clusters")
+#' plot(X,main='actual clusters')
 for (j in 1:3){
  points(X[true.cluster==j,],pch=19, col=j+1)
 }
 points(X[outliers,],pch=19,col=1)
-plot(X,main="clusters estimation")
+plot(X,main='clusters estimation')
 for (j in 1:3){
  points(X[ret$cluster==j,],pch=19, col=j+1)
 }
@@ -96,6 +108,6 @@ points(X[ret$outliers,],pch=19)
 par(oldpar)
 }
 \references{
-Gonzalez, J. D., Yohai, V. J., & Zamar, R. H. (2019). 
+Gonzalez, J. D., Yohai, V. J., & Zamar, R. H. (2019).
 Robust Clustering Using Tau-Scales. arXiv preprint arXiv:1906.08198.
 }
