@@ -1,8 +1,8 @@
-#' ktaucenters_aux
+#' ktaucenters_audata
 #'
 #' Robust Clustering algorithm based on centers, a robust and
 #' efficient version of K-Means.
-#' @param X A matrix of size n x p.
+#' @param data A matrix of size n x p.
 #' @param K The number of clusters.
 #' @param centers matrix of size K x p containing the K initial
 #'     centers, one at each matrix-row.
@@ -33,18 +33,18 @@
 #' # Generate Synthetic data (three cluster well separated)
 #' Z=rnorm(600);
 #' mues=rep(c(0,10,20),200)
-#' X= matrix(Z+mues,ncol=2)
+#' data= matrix(Z+mues,ncol=2)
 #'
 #' # Applying the algorithm
 #' sal = ktaucenters_aux(
-#' X, K=3, centers=X[sample(1:300,3), ],
+#' data, K=3, centers=data[sample(1:300,3), ],
 #' tolerance=1e-3, max_iter=100)
 #'
 #' #plot the results
-#' plot(X,type='n')
-#' points(X[sal$cluster==1,],col=1);
-#' points(X[sal$cluster==2,],col=2);
-#' points(X[sal$cluster==3,],col=3);
+#' plot(data,type='n')
+#' points(data[sal$cluster==1,],col=1);
+#' points(data[sal$cluster==2,],col=2);
+#' points(data[sal$cluster==3,],col=3);
 #'
 #' @note Some times, if the initial centers are wrong, the algorithm
 #'     converges to a non-optimal (local) solution.  To avoid that,
@@ -55,18 +55,19 @@
 #'     Robust Clustering Using Tau-Scales. arXiv preprint
 #'     arXiv:1906.08198.
 #' @export
-ktaucenters_aux <- function(X, K, centers, tolerance, max_iter) {
+ktaucenters_aux <- function(data, centers, tolerance, max_iter) {
 
     # Sanitize
-    if (!is.matrix(centers)) centers = as.matrix(centers)
-    if (!is.matrix(X)) X = as.matrix(X)
+    centers = as.matrix(centers)
+    data = as.matrix(data)
 
     emptyCluster <- FALSE
     emptyClusterFlag <- FALSE
 
     # Initialize stuff
-    n <- nrow(X)
-    p <- ncol(X)
+    K = ifelse(is.integer(centers), centers, nrow(centers))
+    n <- nrow(data)
+    p <- ncol(data)
     c1 <- constC1(p)
     b1 <- 0.5 # FIXME: avoid hard coded constants
     c2 <- constC2(p)
@@ -74,17 +75,17 @@ ktaucenters_aux <- function(X, K, centers, tolerance, max_iter) {
     tauPath <- c()
     niter <- 0
     tol <- tolerance + 1
-    # repeatedCentersMatrix <- matrix(0L, ncol = p, nrow = n)
-    # distances <- matrix(0L, ncol = K, nrow = n)
-    
+
     while ((niter < max_iter) & (tol > tolerance)) {
         
+        # ------------------------
         # Step 1: recompute labels
+        # ------------------------
         
         # Compute distances from observations to each center
         distances <- sqrt(apply(t(centers), 2, 
                                 function(m){
-                                    colSums((t(X) - m)^2)
+                                    colSums((t(data) - m)^2)
                                 }))
 
         ## Find the closest center for each observation
@@ -114,24 +115,6 @@ ktaucenters_aux <- function(X, K, centers, tolerance, max_iter) {
                                         Cu * derpsiOpt(0, cc = c1))
         }
 
-        # Compute weights
-        # weights <- numeric(length(Wni))
-        # for (jota in 1:K) {
-        #     if ((sum(Wni[cluster == jota])) != 0) {
-        #         weights[cluster == jota] = Wni[cluster == jota]/sum(Wni[cluster ==
-        #           jota])
-        #     }
-        #     # FIXME: [1] check this piece of code 
-        #     if ((sum(Wni[cluster == jota])) == 0) { 
-        #         # Esto significa que el algoritmo convergio. Entonces
-        #         # no actualizo las X's. Pero si llega a pasar que son
-        #         # cero las actualizo:
-        #         mmm = length(cluster == jota)
-        #         if (sum(weights[cluster == jota] == 0) == mmm)
-        #           weights[cluster == jota] = 1/mmm
-        #     }
-        # }
-
         # FIXME: check [1]
         weights_aux = lapply(split(Wni, cluster), 
                      function(x) {
@@ -144,37 +127,38 @@ ktaucenters_aux <- function(X, K, centers, tolerance, max_iter) {
         weights = unsplit(weights_aux, cluster)
         
         # Weight observations
-        XW <- crossprod(diag(weights), X)
+        dataW <- crossprod(diag(weights), data)
 
         # Update centers
         oldcenters <- centers
-        
+
+        # -------------------------        
         # Step 2: recompute centers 
+        # -------------------------
         
         # Sometimes a cluster has no observations:
         obs_per_cluster <- table(c(cluster, seq(K))) - 1
         nonempty_cluster <- obs_per_cluster > 0
         centers[nonempty_cluster, ] = Reduce(rbind, 
-                                             by(XW, 
+                                             by(dataW, 
                                                 cluster,
-                                                colSums)) ## FIXME
+                                                colSums))
         
-        # if not all clusters are filled, they are replaced for
-        # the furthest centers. This is specially important when
-        # the number of clusters K is high.
+        # If not all clusters are filled, they are replaced for
+        # the furthest centers. Important when the number of clusters K is high.
         if (any(!nonempty_cluster)) {
             furtherIndices = head(order(distances_min,
-                                        decreasing = TRUE), 
+                                        decreasing = TRUE),
                                   sum(!nonempty_cluster))
-            centers[obs_per_cluster == 0, ] = X[furtherIndices, ]
+            centers[obs_per_cluster == 0, ] = data[furtherIndices, ]
             cluster[furtherIndices] = which(!nonempty_cluster)
             emptyClusterFlag = TRUE
         }
 
-        ## Exit condition
+        # Exit condition
         tol <- sqrt(sum((oldcenters - centers)^2))
         
-        ## Next iteration...
+        # Next iteration...
         niter <- niter + 1
     }
 
