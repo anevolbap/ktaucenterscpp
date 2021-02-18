@@ -5,6 +5,18 @@
 
 using namespace Rcpp;
 
+// distance_to_centers
+List distance_to_centers(NumericMatrix data, NumericMatrix centers);
+RcppExport SEXP _ktaucenterscpp_distance_to_centers(SEXP dataSEXP, SEXP centersSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type data(dataSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type centers(centersSEXP);
+    rcpp_result_gen = Rcpp::wrap(distance_to_centers(data, centers));
+    return rcpp_result_gen;
+END_RCPP
+}
 // rhoAux
 NumericVector rhoAux(NumericVector x, double cc);
 RcppExport SEXP _ktaucenterscpp_rhoAux(SEXP xSEXP, SEXP ccSEXP) {
@@ -136,6 +148,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_ktaucenterscpp_distance_to_centers", (DL_FUNC) &_ktaucenterscpp_distance_to_centers, 2},
     {"_ktaucenterscpp_rhoAux", (DL_FUNC) &_ktaucenterscpp_rhoAux, 2},
     {"_ktaucenterscpp_rhoOpt", (DL_FUNC) &_ktaucenterscpp_rhoOpt, 2},
     {"_ktaucenterscpp_psiAux", (DL_FUNC) &_ktaucenterscpp_psiAux, 2},
