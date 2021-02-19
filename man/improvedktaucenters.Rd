@@ -30,14 +30,6 @@ to NULL by default.}
 \value{
 A list including the estimated K centers and clusters
     labels for the observations
-}
-\description{
-Robust Clustering algorithm for non-spherical data. This function
-estimate clusters taking into account that clusters may have
-different size, volume or orientation.
-}
-\details{
-text describing parameter inputs in more detail.
 \itemize{
  \item{\code{centers}}{:   matrix of size K x p, with the estimated K centers.}
  \item{\code{cluster}}{: array of size n x 1  integers labels between 1 and K.}
@@ -48,6 +40,11 @@ text describing parameter inputs in more detail.
  \item{\code{sigmas}}{: a list containing the k covariance matrices found by the procedure at its second step.}
  \item{\code{outliers}}{: indices observation that can be considered as outliers.}
 }
+}
+\description{
+Robust Clustering algorithm for non-spherical data. This function
+estimate clusters taking into account that clusters may have
+different size, volume or orientation.
 }
 \examples{
 
