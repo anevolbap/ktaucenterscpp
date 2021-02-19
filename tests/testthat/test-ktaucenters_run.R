@@ -13,9 +13,6 @@ test_that("ktaucenters_run", {
     kaux = ktaucenters::ktaucenters_aux(X, K = 4, centers = diag(4)[, 1:2],
                               tolmin=1e-7, NiterMax=1000)
     
-    expected_output = c(0.002063637, 0.013249235, 0.012024533,
-                        0.006088092, 0.013249235, 0.012024533)
 
-
-    expect_equal(kaux_cpp$weights, kaux$weights)
+    expect_equal(kaux_cpp$weights, kaux$weights, tolerance = 1e-3)
 })

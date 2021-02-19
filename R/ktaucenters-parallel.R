@@ -12,7 +12,7 @@
 #'     rule
 #' @param max_iter a maximum number of iterations used for the
 #'     algorithm stopping rule
-#' @param n_runs the number of trials that the base algorithm
+#' @param nstart the number of trials that the base algorithm
 #'     ktaucenters_aux is run.  If it is greater than 1 and center is
 #'     not set as NULL, a random set of (distinct) rows in \code{X}
 #'     will be chosen as the initial centers.
@@ -20,7 +20,7 @@
 #'     starting point.
 #' @param startWithROBINPD TRUE if ROBINDEN estimator is included as
 #'     starting point
-#' @param flag_outliers optional argument for outliers detection - quantiles
+#' @param cutoff optional argument for outliers detection - quantiles
 #'     of chi-square to be used as a threshold for outliers detection,
 #'     defaults to 0.999
 
@@ -65,7 +65,7 @@
 #' points(X[sal$outliers, 1], X[sal$outliers, 2], pch = 19)
 #'
 #' ### Applying a classical (non Robust) algortihm ###
-#' sal <- kmeans(X, centers = 3, n_runs = 100)
+#' sal <- kmeans(X, centers = 3, nstart = 100)
 #'
 #' ### plotting the clusters ###
 #' plot(X, type = 'n', main = 'kmeans (Classical)')
@@ -82,52 +82,48 @@
 #' @importFrom doParallel registerDoParallel
 #' @importFrom foreach %dopar% foreach
 #' @export
+ktaucenters <- function(X, K, centers = NULL, tolerance = 1e-06,
+                        max_iter = 100, nstart = 1,
+                        startWithKmeans = TRUE,
+                        startWithROBINPD = TRUE, cutoff = 0.999) {
 
-MAX_ITER_DEFAULT = 100L
-N_RUNS_DEFAULT = 1L
-TOLERANCE_DEFAULT = 1e-6
-N_CORES_DEFAULT = 1L
-INIT_CENTERS_DEFAULT = list(quote(init_kmeans), quote(init_robin))
-CUTOFF_DEFAULT = 0.999
-MSCALE_BP_DEFAULT = 0.5
+    if (!is.matrix(X)) X = as.matrix(X)
 
-ktaucenters <- function(data,
-                        centers,
-                        tolerance = TOLERANCE_DEFAULT,
-                        max_iter = MAX_ITER_DEFAULT,
-                        n_runs = N_RUNS_DEFAULT,
-                        init_centers = INIT_CENTERS_DEFAULT,
-                        flag_outliers = outliers_tau_cutoff(CUTOFF_DEFAULT,
-                                                            MSCALE_BP_DEFAULT),
-                        n_cores = N_CORES_DEFAULT) {
-    data = as.matrix(data)
-    n_clusters = ifelse(is.list(centers), length(centers), centers)
+    # FIXME: the order is due to testing (seed issues)
+    init = list()
+    if (startWithKmeans) { 
+        init = append(init, "kmeans")
+    }
+    init = append(init, rep("sample", nstart))
+    if (startWithROBINPD) {
+        init = append(init, "robin")
+    }
+    if (!is.null(centers)) {
+        init = append(init, "custom")
+    }
     
-    # Set up center initialization
-    add_init_custom = NULL
-    if (is.list(centers))
-        add_init_custom = quote(init_custom)
-    add_init_random = replicate(n_runs, init_random, simplify = FALSE)
-    init_centers = append(init_centers, c(add_init_random, add_init_custom), 1)
-    
-    # Runs
-    start_centers = lapply(init_centers, function(x)
-        eval(x)(data, n_clusters))
-    ktau_runs = lapply(
-        start_centers,
-        ktaucenters_run,
-        data = data,
-        tolerance = tolerance,
-        max_iter = max_iter
-    )
-    
+    # Parallel loop
+    no_cores <- detectCores() - 1  
+    cl <- makeCluster(no_cores, type = "FORK")  
+    registerDoParallel(cl)  
+    ktau_runs <- foreach(i = seq_along(init)) %dopar% {
+        centers0 = initialize_centers(X, K, 
+                                      method = init[[i]], 
+                                      centers = centers)
+        ktaucenters_aux(X = X,
+                        K = K,
+                        centers = centers0,
+                        tolerance = tolerance,
+                        max_iter = max_iter)
+    }
+    stopCluster(cl)  
+
     # Pick best run
-    best = which.min(lapply(ktau_runs, function(x)
-        x$tauPath_last_iter))
+    best = which.min(lapply(ktau_runs, function(x) x$tauPath_niter))
     best_ktau = ktau_runs[[best]]
     
     # Outlier detection
-    best_ktau = flag_outliers(best_ktau)
-    
+    best_ktau = flag_outliers(best_ktau, cutoff)
+
     return(best_ktau)
 }
