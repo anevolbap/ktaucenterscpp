@@ -1,4 +1,4 @@
-#' ktaucenters_audata
+#' ktaucenters_run
 #'
 #' Robust Clustering algorithm based on centers, a robust and
 #' efficient version of K-Means.
@@ -22,7 +22,7 @@
 #'     iterations.}
 #' \item{\code{Wni}}{: numeric array of size n x 1
 #'     indicating the weights associated to each observation.}
-#' \item{\code{emptyClusterFlag}}{: a boolean value. True means
+#' \item{\code{empty_cluster_flag}}{: a boolean value. True means
 #'     that in some iteration there were clusters totally empty}
 #' \item{\code{niter}}{: number of iterations until convergence
 #'     is achived or maximum number of iteration is reached}
@@ -61,13 +61,12 @@ B2_DEFAULT = 1
 
 ktaucenters_run <-
   function(data, centers, tolerance, max_iter) {
-
     centers = as.matrix(centers)
     data = as.matrix(data)
     
-    # Initialize 
-    emptyClusterFlag <- FALSE
-    K = ifelse(is.integer(centers), centers, nrow(centers))
+    # Initialize
+    empty_cluster_flag <- FALSE
+    n_clusters = ifelse(is.integer(centers), centers, nrow(centers))
     n <- nrow(data)
     p <- ncol(data)
     c1 <- constC1(p)
@@ -81,41 +80,36 @@ ktaucenters_run <-
     while ((iter < max_iter) & (tol > tolerance)) {
       
       # Step 1: (re)compute labels
-      dists <- distance_to_centers(data, centers) # distances to centers
-      distances_min <- dists$min_distance # distance to closest center
-      cluster <- dists$membership # membership (when ties, first is chosen)
+      dists <- distance_to_centers(data, centers) 
+      distances_min <- dists$min_distance 
+      cluster <- dists$membership
       ms <- Mscale(u = distances_min, b = b1, cc = c1) # m-scale
       dnor <- distances_min / ms  # normalized distance
-      tau <- ms * sqrt(mean(rhoOpt(dnor, cc = c2))) / sqrt(b2) # tau-scale
+      tau <-
+        ms * sqrt(mean(rhoOpt(dnor, cc = c2))) / sqrt(b2) # tau-scale
       tauPath <- c(tauPath, tau)
       
       # Step 2: (re)compute centers
-      oldcenters <- centers # update centers
+      oldcenters <- centers
       Du <- mean(psiOpt(dnor, cc = c1) * dnor)
       Cu <- mean(2 * rhoOpt(dnor, cc = c2) - psiOpt(dnor, cc = c2) * dnor)
       Wni <- (Cu * psiOpt(dnor, cc = c1) + Du * psiOpt(dnor, cc = c2)) / dnor
-      Wni[distances_min == 0] <- (Du * derpsiOpt(0, cc = c2) + 
+      Wni[distances_min == 0] <- (Du * derpsiOpt(0, cc = c2) +
                                     Cu * derpsiOpt(0, cc = c1))
-      weights = Wni / rowsum(Wni, cluster)[cluster] # compute weights
-      weights[is.infinite(weights)] = Wni[is.infinite(weights)]
+      weights <- Wni / rowsum(Wni, cluster)[cluster] # compute weights
+      weights[is.na(weights)] = Wni[is.na(weights)] # FIXME: see original func
       
-      # Sometimes a cluster has no observations:
-      obs_per_cluster <- tabulate(c(cluster, seq(K))) - 1
-      nonempty_cluster <- obs_per_cluster > 0 ## FIXME: improve
-      centers[nonempty_cluster, ] = rowsum(data * weights, cluster)
-      
-      # If not all clusters are filled, they are replaced for
-      # the furthest centers. Important when the number of clusters K is high.
-      if (any(!nonempty_cluster)) {
-        furtherIndices = head(order(distances_min,
-                                    decreasing = TRUE),
-                              sum(!nonempty_cluster))
-        centers[obs_per_cluster == 0, ] = data[furtherIndices, ]
-        cluster[furtherIndices] = which(!nonempty_cluster)
-        emptyClusterFlag = TRUE
+      # Clusters could have no observations (filled with furthest centers)
+      empty_clusters <- tabulate(c(cluster, seq(n_clusters))) == 1
+      centers[!empty_clusters,] <- rowsum(data * weights, cluster)
+      if (any(empty_clusters)) {
+        furthest_indices <- head(order(distances_min, decreasing = TRUE),
+                                 sum(empty_clusters))
+        centers[empty_clusters, ] <- data[furthest_indices, , drop = FALSE]
+        cluster[furthest_indices] <- which(empty_clusters)
+        empty_cluster_flag <- TRUE
       }
-      
-      tol <- sqrt(sum((oldcenters - centers) ^ 2)) # exit condition
+      tol <- sqrt(sum((oldcenters - centers) ^ 2))
       iter <- iter + 1
     }
     
@@ -131,7 +125,7 @@ ktaucenters_run <-
         weights = weights,
         distances_min = distances_min,
         Wni = Wni,
-        emptyClusterFlag = emptyClusterFlag
+        empty_cluster_flag = empty_cluster_flag
       )
     )
   }
