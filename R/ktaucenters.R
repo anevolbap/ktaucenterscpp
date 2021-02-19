@@ -90,14 +90,14 @@ INIT_CENTERS_DEFAULT = list(quote(init_kmeans), quote(init_robin))
 CUTOFF_DEFAULT = 0.999
 MSCALE_BP_DEFAULT = 0.5
 
-ktaucenters_noparallel <- function(data,
-                                   centers,
-                                   tolerance = TOLERANCE_DEFAULT,
-                                   max_iter = MAX_ITER_DEFAULT,
-                                   n_runs = N_RUNS_DEFAULT,
-                                   init_centers = INIT_CENTERS_DEFAULT,
-                                   flag_outliers = outliers_tau_cutoff(CUTOFF_DEFAULT,
-                                                                       MSCALE_BP_DEFAULT)) {
+ktaucenters <- function(data,
+                        centers,
+                        tolerance = TOLERANCE_DEFAULT,
+                        max_iter = MAX_ITER_DEFAULT,
+                        n_runs = N_RUNS_DEFAULT,
+                        init_centers = INIT_CENTERS_DEFAULT,
+                        flag_outliers = outliers_tau_cutoff(CUTOFF_DEFAULT,
+                                                            MSCALE_BP_DEFAULT)) {
     data = as.matrix(data)
     n_clusters = ifelse(is.list(centers), length(centers), centers)
     
@@ -107,7 +107,7 @@ ktaucenters_noparallel <- function(data,
         add_init_custom = quote(init_custom)
     add_init_random = replicate(n_runs, init_random, simplify = FALSE)
     init_centers = append(init_centers, c(add_init_random, add_init_custom), 1)
-
+    
     # Runs
     best_tau = Inf
     ktau_runs = for (iter in seq_along(start_centers)) {
