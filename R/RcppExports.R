@@ -125,7 +125,11 @@ my_median <- function(x) {
 #' @references Maronna, R. A., Martin, R. D., Yohai, V. J., & Salibian-Barrera, M. (2018).
 #' Robust statistics: theory and methods (with R). Wiley.
 #' @export
-Mscale <- function(u, b, cc) {
-    .Call('_ktaucenterscpp_Mscale', PACKAGE = 'ktaucenterscpp', u, b, cc)
+m_scale <- function(u, b, cc) {
+    .Call('_ktaucenterscpp_m_scale', PACKAGE = 'ktaucenterscpp', u, b, cc)
+}
+
+tau_scale <- function(u, b1, b2, c1, c2) {
+    .Call('_ktaucenterscpp_tau_scale', PACKAGE = 'ktaucenterscpp', u, b1, b2, c1, c2)
 }
 
