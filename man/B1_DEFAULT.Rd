@@ -3,7 +3,7 @@
 \docType{data}
 \name{B1_DEFAULT}
 \alias{B1_DEFAULT}
-\title{ktaucenters_audata}
+\title{ktaucenters_run}
 \format{
 An object of class \code{numeric} of length 1.
 }
@@ -37,7 +37,7 @@ A list including the estimated K centers and labels for the
     iterations.}
 \item{\code{Wni}}{: numeric array of size n x 1
     indicating the weights associated to each observation.}
-\item{\code{emptyClusterFlag}}{: a boolean value. True means
+\item{\code{empty_cluster_flag}}{: a boolean value. True means
     that in some iteration there were clusters totally empty}
 \item{\code{niter}}{: number of iterations until convergence
     is achived or maximum number of iteration is reached}

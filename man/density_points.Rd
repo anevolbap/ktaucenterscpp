@@ -4,7 +4,7 @@
 \alias{density_points}
 \title{denpoints}
 \usage{
-density_points(x, k = 4)
+density_points(data, neigh = 4)
 }
 \arguments{
 \item{x}{A distance matrix calculated on \code{data} or a matrix}
