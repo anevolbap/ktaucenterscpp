@@ -59,14 +59,14 @@
 B1_DEFAULT = 0.5
 B2_DEFAULT = 1
 
-ktaucenters_run <-
-  function(data, centers, tolerance, max_iter) {
-    centers = as.matrix(centers)
-    data = as.matrix(data)
+ktaucenters_run <- function(data, centers, tolerance, max_iter) {
+  
+    centers <- as.matrix(centers)
+    data <- as.matrix(data)
     
     # Initialize
     empty_cluster_flag <- FALSE
-    n_clusters = ifelse(is.integer(centers), centers, nrow(centers))
+    n_clusters <- ifelse(is.integer(centers), centers, nrow(centers))
     n <- nrow(data)
     p <- ncol(data)
     c1 <- constC1(p)
@@ -83,28 +83,21 @@ ktaucenters_run <-
       dists <- distance_to_centers(data, centers) 
       distances_min <- dists$min_distance 
       cluster <- dists$membership
-      ms <- Mscale(u = distances_min, b = b1, cc = c1) # m-scale
-      dnor <- distances_min / ms  # normalized distance
-      tau <-
-        ms * sqrt(mean(rhoOpt(dnor, cc = c2))) / sqrt(b2) # tau-scale
-      tauPath <- c(tauPath, tau)
+      tau <- tau_scale(distances_min, b1, b2, c1, c2)
+      tauPath <- c(tauPath, tau$tau)
       
       # Step 2: (re)compute centers
       oldcenters <- centers
-      Du <- mean(psiOpt(dnor, cc = c1) * dnor)
-      Cu <- mean(2 * rhoOpt(dnor, cc = c2) - psiOpt(dnor, cc = c2) * dnor)
-      Wni <- (Cu * psiOpt(dnor, cc = c1) + Du * psiOpt(dnor, cc = c2)) / dnor
-      Wni[distances_min == 0] <- (Du * derpsiOpt(0, cc = c2) +
-                                    Cu * derpsiOpt(0, cc = c1))
-      weights <- Wni / rowsum(Wni, cluster)[cluster] # compute weights
+      Wni <- tau$Wni
+      weights <- Wni / rowsum(Wni, cluster)[cluster]
       weights[is.na(weights)] = Wni[is.na(weights)] # FIXME: see original func
       
       # Clusters could have no observations (filled with furthest centers)
       empty_clusters <- tabulate(c(cluster, seq(n_clusters))) == 1
       centers[!empty_clusters,] <- rowsum(data * weights, cluster)
       if (any(empty_clusters)) {
-        furthest_indices <- head(order(distances_min, decreasing = TRUE),
-                                 sum(empty_clusters))
+        furthest_indices <- order(distances_min, 
+                                  decreasing = TRUE)[1:sum(empty_clusters)]
         centers[empty_clusters, ] <- data[furthest_indices, , drop = FALSE]
         cluster[furthest_indices] <- which(empty_clusters)
         empty_cluster_flag <- TRUE

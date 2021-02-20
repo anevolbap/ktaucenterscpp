@@ -27,16 +27,16 @@ by LOF, the default is 10.}
     for k-means-based clustering methods.
 }
 \details{
-This function do the same as ROBIN but taking into account the 
+This function do the same as ROBIN but taking into account the
   density (instead of the inverse of the average relative local
   density known as LOF)
-  
+
   The centers are the observations located in the most dense
     region and far away from each other at the same time.  In order
     to find the observations in the highly dense region,
     ROBINPOINTDEN uses point density estimation (instead of Local
     Outlier Factor, Breunig et al. (2000)), see more details.
-    
+
     Observation: Outliers have a high 'idp' value. In imbalanced cases
     and when K increases, all the observations from a group might be
     above the critRobin, So we need to increase the critRobin in order

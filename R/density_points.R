@@ -38,11 +38,14 @@
 #'     Letters, 30(11), 994-1002, 2009.
 #' @importFrom dbscan kNN
 #' @importFrom methods is
-density_points <- function(x, k = 4) {
+density_points <- function(data, neigh = 4) {
     
-    d <- kNN(x, k)
-    pointDen <- rowMeans(pmax(matrix(d$dist[t(d$id), k], ncol=k, byrow = TRUE),
-                              d$dist))
-    pointDen[is.nan(pointDen)] <- 1
-    return(pointDen)
+    knn_fit <- kNN(data, neigh)
+    points_densities <- rowMeans(pmax(matrix(knn_fit$dist[t(knn_fit$id), neigh], 
+                                             ncol = neigh, 
+                                             byrow = TRUE),
+                                      knn_fit$dist)
+    )
+    points_densities[is.nan(points_densities)] <- 1
+    return(points_densities)
 }

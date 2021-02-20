@@ -5,7 +5,6 @@
 
 library(Rcpp)
 library(microbenchmark)
-
 library(tidyverse)
 
 ## Data
@@ -14,44 +13,27 @@ Z <- rnorm(600)
 mues <- rep(c(-4, 0, 4), 200)
 X <-  matrix(Z + mues, ncol = 2)
 X[sample(1:300, 60), ] <- matrix(runif(40, 2 * min(X), 2 * max(X)),
-                                ncol = 2, nrow = 60)
+                                 ncol = 2, nrow = 60)
 set.seed(7)
 k1 = ktaucenterscpp::ktaucenters(as_tibble(X), centers = 6, n_runs = 10)
 set.seed(7)
-
 k2 = ktaucenters_original(X, centers = 4)
 
-sort(k1$tauPath)
-sort(k2$tauPath)
-
 ## ---- 
-m = microbenchmark::microbenchmark(
-                ktaucenterscpp::ktaucenters(X, centers = 5, n_runs = 10),
-                ktaucenters::ktaucenters(X, K = 5, nstart = 10), times = 50)
-
 m = bench::mark(check=FALSE, filter_gc = FALSE,
-    ktaucenterscpp::ktaucenters(X, centers = 5, n_runs = 10),
-    ktaucenters::ktaucenters(X, K = 5, nstart = 10), iterations = 50)
+    ktaucenterscpp::ktaucenters(X, centers = 5, n_runs = 20),
+    ktaucenters::ktaucenters(X, K = 5, nstart = 20), 
+    iterations = 50)
 
-plot(m)
-
-
-a = ktaucenterscpp::ktaucenters(X, centers = 5, n_runs = 500)
-
-b = ktaucenters::ktaucenters(X, K = 5, nstart = 500)
-
-## Performance improved?
-start = Sys.time()
-for (iter in 1:10){
-    set.seed(iter)
-    Z <- rnorm(600)
-    mues <- rep(c(-4, 0, 4), 200)
-    X <-  matrix(Z + mues, ncol = 2)
-    X[sample(1:300, 60), ] <- matrix(runif(40, 2 * min(X), 2 * max(X)),
+set.seed(6)
+Z <- rnorm(600)
+mues <- rep(c(-4, 0, 4), 200)
+X <- matrix(Z + mues, ncol = 2)
+X[sample(1:300, 60), ] <- matrix(runif(40, 2 * min(X), 2 * max(X)),
                                  ncol = 2, nrow = 60)
-    aux = ktaucenters::ktaucenters(X, K = 3, nstart = 10)
-}
-end = Sys.time() - start
+set.seed(6)
+ktau_cpp <- ktaucenterscpp::ktaucenters(data=X, centers = 4, n_runs = 1)
+
 
 ktaucenters_original = function (X, K, centers = NULL, tolmin = 1e-06, NiterMax = 100, 
           nstart = 1, startWithKmeans = TRUE, startWithROBINPD = TRUE, 
@@ -123,107 +105,86 @@ ktaucenters_original = function (X, K, centers = NULL, tolmin = 1e-06, NiterMax 
     best_ret_ktau
 }
 
-
-# Distancias
-k = 5
-p = 2
-n = 100
-centers = matrix(runif(p * k), ncol = p)
-data = matrix(rnorm(n * p), nrow = n)
-
-bench::mark(d1 <- sqrt(apply(t(centers), 2, 
-                             function(m){
-                                 colSums((t(data) - m)^2)
-                             })),
-            d2 <- distance_to_centers(data, centers)$distance_matrix,iterations = 20000L)
-
-
-d1 <- sqrt(apply(t(centers), 2, 
-                 function(m){
-                     colSums((t(data) - m)^2)
-                 }))
-
-d2 <- distance_to_centers(data, centers)
-
-distances_min <- apply(d1, 1, min)
-
-# Membership vector (when ties, first is chosen)
-cluster <- max.col(-d1, ties = "first")
-
-d2$membership 
-
-cluster
-
-all(d1 == d2$distance_matrix)
-
-distances_min == d2$min_distance
-
-
-# Distancias
-k = 5
-p = 2
-n = 100
-centers = matrix(runif(p * k), ncol = p)
-data = matrix(rnorm(n * p), nrow = n)
-bench::mark(d1 <- ktaucenters_aux(data, centers, TOLERANCE_DEFAULT, MAX_ITER_DEFAULT),
-            d2 <- ktaucenters_aux_cpp(data, centers, TOLERANCE_DEFAULT, MAX_ITER_DEFAULT), 
-            iterations = 100L, check = TRUE)
-
-
-a = runif(100)
-b = cluster
-cc = replace(rowsum(a,b),list = 1:2, c(0,0))
-
-a
-
-a/cc[b]
-
-
-
-
-cero = rep(0,K)
-cero[rownames(rowsum(cluster, cluster))] = rowsum(cluster, cluster)
-
-K=5
-aux = c(cluster, seq(K))
-bench::mark(table(aux),
-            rowsum(rep(1,aux), aux), check = FALSE)
-
-1L * length(aux)
-
-table(aux)
-rowsum(rep(1, length(aux)),aux)
-
-
-# Distancias
-k = 5
-p = 2
-n = 100
-centers = matrix(runif(p * k), ncol = p)
-data = matrix(rnorm(n * p), nrow = n)
-cluster = sample(1:k , n, replace = TRUE)
-weights = runif(n)
-
-mapply(colWeightedMeans, split.data.frame(data, cluster), split(weights, cluster))
-
-rowsum(data * weights, cluster)
-
-dataW = crossprod(diag(weights), data)
-Reduce(rbind,
-       by(dataW,
-          cluster,
-          colSums))
-
-set.seed(1)
-k1=ktaucenterscpp::ktaucenters(X, centers = 5, n_runs = 2)
-set.seed(1)
-k2=ktaucenters::ktaucenters(X, K = 5, nstart = 2)
-
-names(k1)
-names(k2)
-
-max(abs(k1$tauPath - k2$tauPath))
-
-max(abs(k1$weights - k2$weights))
-
-class(k2$weights)
+ktau_aux_orig = function (X, K, centers, tolmin, NiterMax) {
+    if (!is.matrix(centers)) {
+        centers = as.matrix(centers)
+    }
+    if (!is.matrix(X)) {
+        X = as.matrix(X)
+    }
+    emptyCluster <- FALSE
+    emptyClusterFlag <- FALSE
+    n <- nrow(X)
+    p <- ncol(X)
+    c1 <- constC1(p)
+    b1 <- 0.5
+    c2 <- constC2(p)
+    b2 <- 1
+    tauPath <- c()
+    niter <- 0
+    tol <- tolmin + 1
+    repeatedCentersMatrix <- matrix(0, ncol = p, nrow = n)
+    distances <- matrix(0, ncol = K, nrow = n)
+    while ((niter < NiterMax) & (tol > tolmin)) {
+        for (h in 1:K) {
+            distances[, h] <- sqrt(apply(sweep(X, 2, centers[h, 
+            ])^2, 1, sum))
+        }
+        distances_min <- apply(distances, 1, min)
+        cluster <- apply(distances, 1, function(x) which(x == 
+                                                             min(x))[1])
+        ms <- Mscale(u = distances_min, b = b1, c = c1)
+        dnor <- distances_min/ms
+        tau <- ms * sqrt(mean(rhoOpt(dnor, cc = c2)))/sqrt(b2)
+        tauPath <- c(tauPath, tau)
+        Du <- mean(psiOpt(dnor, cc = c1) * dnor)
+        Cu <- mean(2 * rhoOpt(dnor, cc = c2) - psiOpt(dnor, cc = c2) * 
+                       dnor)
+        Wni <- (Cu * psiOpt(dnor, cc = c1) + Du * psiOpt(dnor, 
+                                                         cc = c2))/dnor
+        Wni1 = Wni
+        if (sum(distances_min == 0) > 0) {
+            Wni[distances_min == 0] <- (Du * derpsiOpt(0, cc = c2) + 
+                                            Cu * derpsiOpt(0, cc = c1))
+        }
+        Wni2 = Wni
+        weights <- 0 * Wni
+        for (jota in 1:K) {
+            if ((sum(Wni[cluster == jota])) != 0) {
+                weights[cluster == jota] = Wni[cluster == jota]/sum(Wni[cluster == 
+                                                                            jota])
+            }
+            if ((sum(Wni[cluster == jota])) == 0) {
+                mmm = length(cluster == jota)
+                if (sum(weights[cluster == jota] == 0) == mmm) 
+                    weights[cluster == jota] = 1/mmm
+            }
+        }
+        XW <- 0 * X
+        XW = sweep(X, 1, weights, FUN = "*")
+        oldcenters <- centers
+        auxx = rep(0, K)
+        for (jota in 1:K) {
+            auxx[jota] <- sum(cluster == jota)
+            if (auxx[jota] > 0) {
+                centers[jota, ] = apply(as.matrix(XW[cluster == 
+                                                         jota, ]), 2, sum)
+            }
+        }
+        if (sum(auxx > 0) != K) {
+            furtherIndices = order(distances_min, decreasing = TRUE)[1:sum(auxx == 
+                                                                               0)]
+            centers[auxx == 0, ] = X[furtherIndices, ]
+            cluster[furtherIndices] = which(auxx == 0)
+            emptyClusterFlag = TRUE
+        }
+        tol = sqrt(sum((oldcenters - centers)^2))
+        niter = niter + 1
+    }
+    ret = list(tauPath = tauPath, niter = niter, centers = centers, 
+               cluster = cluster, emptyCluster = emptyCluster, tol = tol, 
+               weights = weights, di = distances_min, 
+               Wni = Wni, Wni1 = Wni1, Wni2 = Wni2,  
+               emptyClusterFlag = emptyClusterFlag)
+    return(ret)
+}

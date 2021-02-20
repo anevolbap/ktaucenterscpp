@@ -78,9 +78,6 @@
 #' Robust Clustering Using Tau-Scales. arXiv preprint arXiv:1906.08198.
 #'
 #' @importFrom stats kmeans dist qchisq
-#' @importFrom parallel detectCores makeCluster stopCluster
-#' @importFrom doParallel registerDoParallel
-#' @importFrom foreach %dopar% foreach
 #' @export
 
 MAX_ITER_DEFAULT = 100L
@@ -110,9 +107,9 @@ ktaucenters <- function(data,
     
     # Runs
     best_tau = Inf
-    ktau_runs = for (iter in seq_along(start_centers)) {
+    ktau_runs = for (iter in seq_along(init_centers)) {
         current_run = ktaucenters_run(data, 
-                                      eval(init_centers[[i]])(data, n_clusters),
+                                      eval(init_centers[[iter]])(data, n_clusters),
                                       tolerance, max_iter)
         if (current_run$tauPath_last_iter < best_tau) {
             best_run = current_run
