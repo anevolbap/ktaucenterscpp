@@ -133,16 +133,31 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// Mscale
-double Mscale(NumericVector u, double b, double cc);
-RcppExport SEXP _ktaucenterscpp_Mscale(SEXP uSEXP, SEXP bSEXP, SEXP ccSEXP) {
+// m_scale
+double m_scale(NumericVector u, double b, double cc);
+RcppExport SEXP _ktaucenterscpp_m_scale(SEXP uSEXP, SEXP bSEXP, SEXP ccSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericVector >::type u(uSEXP);
     Rcpp::traits::input_parameter< double >::type b(bSEXP);
     Rcpp::traits::input_parameter< double >::type cc(ccSEXP);
-    rcpp_result_gen = Rcpp::wrap(Mscale(u, b, cc));
+    rcpp_result_gen = Rcpp::wrap(m_scale(u, b, cc));
+    return rcpp_result_gen;
+END_RCPP
+}
+// tau_scale
+List tau_scale(NumericVector u, double b1, double b2, double c1, double c2);
+RcppExport SEXP _ktaucenterscpp_tau_scale(SEXP uSEXP, SEXP b1SEXP, SEXP b2SEXP, SEXP c1SEXP, SEXP c2SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type u(uSEXP);
+    Rcpp::traits::input_parameter< double >::type b1(b1SEXP);
+    Rcpp::traits::input_parameter< double >::type b2(b2SEXP);
+    Rcpp::traits::input_parameter< double >::type c1(c1SEXP);
+    Rcpp::traits::input_parameter< double >::type c2(c2SEXP);
+    rcpp_result_gen = Rcpp::wrap(tau_scale(u, b1, b2, c1, c2));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -159,7 +174,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ktaucenterscpp_constC1", (DL_FUNC) &_ktaucenterscpp_constC1, 1},
     {"_ktaucenterscpp_constC2", (DL_FUNC) &_ktaucenterscpp_constC2, 1},
     {"_ktaucenterscpp_my_median", (DL_FUNC) &_ktaucenterscpp_my_median, 1},
-    {"_ktaucenterscpp_Mscale", (DL_FUNC) &_ktaucenterscpp_Mscale, 3},
+    {"_ktaucenterscpp_m_scale", (DL_FUNC) &_ktaucenterscpp_m_scale, 3},
+    {"_ktaucenterscpp_tau_scale", (DL_FUNC) &_ktaucenterscpp_tau_scale, 5},
     {NULL, NULL, 0}
 };
 
