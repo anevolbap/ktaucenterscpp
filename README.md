@@ -1,6 +1,15 @@
 # ktaucenters package: Robust and efficient Clustering 
 ====================================================
 
+> **DEPRECATED.** This repository is no longer maintained.
+>
+> This was an intermediate attempt to speed up the original `ktaucenters`
+> package using C code underneath. The work was halted and superseded by
+> the work of Douglas, a student of Juan. The maintained package is now on
+> CRAN: https://cran.r-project.org/package=ktaucenters
+>
+> Install the maintained version with `install.packages("ktaucenters")`.
+
 #### Juan D. Gonzalez, Victor J. Yohai, Ruben H. Zamar 
 
 
